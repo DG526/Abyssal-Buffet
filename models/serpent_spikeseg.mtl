@@ -1,0 +1,12 @@
+# Blender 3.3.0 MTL File: 'Serpent 2.0.blend'
+# www.blender.org
+
+newmtl SpikeSegMat
+Ns 250.000000
+Ka 1.000000 1.000000 1.000000
+Ks 0.500000 0.500000 0.500000
+Ni 1.450000
+d 1.000000
+illum 2
+map_Kd C:/Users/minds/Dropbox/3D Models/School Stuff/Serpent Texts/SpikeSeg.png
+map_Ke C:/Users/minds/Dropbox/3D Models/School Stuff/Serpent Texts/SpikeSeg_Emm.png

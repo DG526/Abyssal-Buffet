@@ -51,6 +51,9 @@ Entity *entity_new()
             entity_manager.entity_list[i].scale.x = 1;
             entity_manager.entity_list[i].scale.y = 1;
             entity_manager.entity_list[i].scale.z = 1;
+            entity_manager.entity_list[i].localScale.x = 1;
+            entity_manager.entity_list[i].localScale.y = 1;
+            entity_manager.entity_list[i].localScale.z = 1;
             return &entity_manager.entity_list[i];
         }
     }
@@ -115,7 +118,8 @@ void entity_update(Entity *self)
     vector3d_add(self->velocity,self->acceleration,self->velocity);
     
     gfc_matrix_identity(self->modelMat);
-    gfc_matrix_scale(self->modelMat,self->scale);
+    Vector3D truescale = vector3d(self->scale.x * self->localScale.x, self->scale.y * self->localScale.y, self->scale.z * self->localScale.z);
+    gfc_matrix_scale(self->modelMat,truescale);
     
     gfc_matrix_rotate(self->modelMat,self->modelMat,self->rotation.z,vector3d(0,0,1));
     gfc_matrix_rotate(self->modelMat,self->modelMat,self->rotation.y,vector3d(0,1,0));

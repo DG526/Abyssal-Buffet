@@ -5,6 +5,17 @@
 
 #include "gf3d_model.h"
 
+typedef enum {
+    ET_DEFAULT = 0,
+    ET_SERPENTCONTROLLER,
+    ET_SERPENTTJAW,
+    ET_SERPENTBJAW,
+    ET_SERPENTLURE,
+    ET_SERPENTSEG,
+    ET_PREY,
+    ET_SWITCH,
+    ET_PREDATOR
+}EntityType;
 
 typedef struct Entity_S
 {
@@ -21,9 +32,26 @@ typedef struct Entity_S
     Vector3D    velocity;
     Vector3D    acceleration;
     
+    Uint32      randomSeed;
+    Uint32      lastTickTime;
+
+    EntityType entityType;
+
+    struct Entity_S* parent;
+    float followDist;
+    Uint32  childCount;
+    struct Entity_S* children[16];
+
+    float speed;
+    float rotSpeed;
+
+    float customFloat;
     
     Vector3D    scale;
     Vector3D    rotation;
+
+    Vector3D    localScale;
+    Vector3D    localRotation;
     
     Uint32      health;     /**<entity dies when it reaches zero*/
     // WHATEVER ELSE WE MIGHT NEED FOR ENTITIES

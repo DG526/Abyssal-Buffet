@@ -15,6 +15,7 @@
 
 #include "entity.h"
 #include "agumon.h"
+#include "serpent.h"
 #include "player.h"
 #include "world.h"
 
@@ -49,11 +50,13 @@ int main(int argc,char *argv[])
     mouse = gf3d_sprite_load("images/pointer.png",32,32, 16);
     
     w = world_load("config/testworld.json");
-    
+    /*
     for (a = 0; a < 10;a++)
     {
         agumon_new(vector3d(a * 10 -50,0,0));
     }
+    */
+    serpent_new(vector3d(0, 0, 25));
     
     slog_sync();
     gf3d_camera_set_scale(vector3d(1,1,1));
