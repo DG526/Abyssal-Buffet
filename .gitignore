@@ -53,3 +53,10 @@ dkms.conf
 makefile.dep
 gf3d
 *.log
+
+# Auto-Generated files
+*.foz
+*.gfxr
+
+# Game runtime files
+*.sav

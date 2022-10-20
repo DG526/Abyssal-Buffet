@@ -13,6 +13,11 @@
 #include "gf3d_texture.h"
 #include "gf3d_sprite.h"
 
+#include "simple_json.h"
+#include "simple_json_string.h"
+#include "simple_json_parse.h"
+#include "simple_json_error.h"
+
 #include "entity.h"
 #include "agumon.h"
 #include "serpent.h"
@@ -56,7 +61,56 @@ int main(int argc,char *argv[])
         agumon_new(vector3d(a * 10 -50,0,0));
     }
     */
-    serpent_new(vector3d(0, 0, 25));
+    SerpentPersStats* sps;
+    sps = (SerpentPersStats*)gfc_allocate_array(sizeof(SerpentPersStats), 1);
+    if (!sps) {
+        slog("Well dang, no room for the serpent's stats.");
+        return 0;
+    }
+    SJson* saveFile = sj_load("serpentSave.sav");
+    SJson* metabolism;
+    SJson* lureStrength;
+    SJson* stealth;
+    SJson* speed;
+    SJson* headStart;
+    if (!saveFile) {
+        slog("Creating a new save file...");
+        saveFile = sj_object_new();
+        metabolism = sj_new_int(4);
+        lureStrength = sj_new_int(4);
+        stealth = sj_new_int(1);
+        speed = sj_new_int(1);
+        headStart = sj_new_int(1);
+        sj_object_insert(saveFile, "metabolism", metabolism);
+        sj_object_insert(saveFile, "lureStrength", lureStrength);
+        sj_object_insert(saveFile, "stealth", stealth);
+        sj_object_insert(saveFile, "speed", speed);
+        sj_object_insert(saveFile, "headStart", headStart);
+
+        sj_save(saveFile, "serpentSave.sav");
+    }
+    else {
+        slog("Loading save file...");
+        metabolism = sj_object_get_value(saveFile, "metabolism");
+        lureStrength = sj_object_get_value(saveFile, "lureStrength");
+        stealth = sj_object_get_value(saveFile, "stealth");
+        speed = sj_object_get_value(speed, "metabolism");
+        headStart = sj_object_get_value(headStart, "metabolism");
+    }
+    sj_get_integer_value(metabolism, sps->metobolism);
+    sj_get_integer_value(lureStrength, sps->lureStrength);
+    sj_get_integer_value(stealth, sps->stealth);
+    sj_get_integer_value(speed, sps->speed);
+    sj_get_integer_value(headStart, sps->headStart);
+
+    sj_free(saveFile);
+    sj_object_free(metabolism);
+    sj_object_free(lureStrength);
+    sj_object_free(stealth);
+    sj_object_free(speed);
+    sj_object_free(headStart);
+
+    serpent_new(vector3d(0, 0, 25), sps);
     
     slog_sync();
     gf3d_camera_set_scale(vector3d(1,1,1));

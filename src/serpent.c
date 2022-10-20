@@ -14,16 +14,38 @@ void serpent_add_segment(Entity* serpent);
 static int pos = 1, neg = -1;
 //static int i_jawRotMult = 0;
 
-Entity* serpent_new(Vector3D position)
+
+
+typedef struct {
+    float health;
+    int size; //determines what can be eaten
+    int length; //how many segments
+    float hunger; //when it reaches 1, serpent loses health
+    float hungerRate;
+    SerpentPersStats* persStats;
+}SerpentData;
+
+Entity* serpent_new(Vector3D position, SerpentPersStats *persStats)
 {
     Entity* serpentController = NULL;
 
     serpentController = entity_new();
-    if (!serpentController)
+
+    SerpentData* sd = (SerpentData*)gfc_allocate_array(sizeof(SerpentData), 1);
+
+    if (!serpentController || !sd)
     {
         slog("UGH OHHHH, no serpent for you!");
         return NULL;
     }
+
+    sd->health = 50;
+    sd->hunger = 0;
+    sd->hungerRate = 1.0f / 3.0f / 60.0f;
+    sd->size = 1;
+    sd->length = 13;
+    sd->persStats = persStats;
+
     serpentController->childCount = 4;
     Entity* serpentTJaw = NULL; Entity* serpentBJaw = NULL; Entity* serpentLure = NULL; Entity* lastSeg = NULL;
     serpentTJaw = entity_new();
@@ -146,7 +168,7 @@ void serpent_think(Entity* self)
 
         self->position.x -= dx * 0.015 * self->scale.y;
         self->position.y -= dy * 0.015 * self->scale.y;
-        self->position.z -= dz * 0.015 * self->scale.y;
+        self->position.z += dz * 0.015 * self->scale.y;
     }
 }
 void serpent_update(Entity* self) {
