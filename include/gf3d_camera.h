@@ -7,6 +7,7 @@ typedef struct
 {
     Matrix4 cameraMat;      //final matrix to become the view matrix
     Vector3D scale;
+    Vector3D offset;
     Vector3D position;
     Vector3D rotation;      // pitch, roll, yaw
 }Camera;
@@ -59,5 +60,6 @@ void gf3d_camera_set_scale(Vector3D scale);
  */
 void gf3d_camera_set_rotation(Vector3D rotation);
 
+void camera_set_offset(Vector3D offset);
 
 #endif

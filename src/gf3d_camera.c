@@ -45,6 +45,11 @@ void gf3d_camera_update_view()
     float cosYaw = cos(gf3d_camera.rotation.z);
     float sinYaw = sin(gf3d_camera.rotation.z); 
 
+    Vector3D offset;
+    offset.x = gf3d_camera.offset.x;
+    offset.y = -gf3d_camera.offset.z;        //inverting for Z-up
+    offset.z = gf3d_camera.offset.y;
+
     position.x = gf3d_camera.position.x;
     position.y = -gf3d_camera.position.z;        //inverting for Z-up
     position.z = gf3d_camera.position.y;
@@ -94,6 +99,12 @@ void gf3d_camera_set_scale(Vector3D scale)
     else gf3d_camera.scale.y = 1/scale.y;
     if (!scale.z)gf3d_camera.scale.z = 0;
     else gf3d_camera.scale.z = 1/scale.z;
+}
+
+void camera_set_offset(Vector3D offset) {
+    gf3d_camera.offset.x = offset.x;
+    gf3d_camera.offset.y = offset.y;
+    gf3d_camera.offset.z = offset.z;
 }
 
 /*eol@eof*/

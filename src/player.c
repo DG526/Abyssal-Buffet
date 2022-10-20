@@ -70,8 +70,8 @@ void player_think(Entity *self)
 void player_update(Entity *self)
 {
     if (!self)return;
-    gf3d_camera_set_position(self->position);
-    gf3d_camera_set_rotation(self->rotation);
+    //gf3d_camera_set_position(self->position);
+    //gf3d_camera_set_rotation(self->rotation);
 }
 
 /*eol@eof*/

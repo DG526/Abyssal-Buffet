@@ -2,9 +2,11 @@
 #include "simple_logger.h"
 #include "serpent.h"
 #include "gfc_input.h"
+#include "gf3d_camera.h"
 
 
 void serpent_think(Entity* self);
+void serpent_update(Entity* self);
 void serpent_head_think(Entity* self);
 void serpent_lure_think(Entity* self);
 void serpent_segment_think(Entity* self);
@@ -60,10 +62,10 @@ Entity* serpent_new(Vector3D position)
     serpentController->children[3] = lastSeg;
 
     serpentController->think = serpent_think;
+    serpentController->update = serpent_update;
     vector3d_copy(serpentController->position, position);
     serpentController->lastTickTime = SDL_GetTicks();
     serpentController->scale = vector3d(10, 10, 10);
-    serpentController->rotation.x += 90 * GFC_DEGTORAD;
 
     vector3d_copy(serpentTJaw->position, serpentController->position);
     vector3d_copy(serpentBJaw->position, serpentController->position);
@@ -71,7 +73,7 @@ Entity* serpent_new(Vector3D position)
     vector3d_copy(lastSeg->position, serpentController->position);
 
     lastSeg->localScale = vector3d(0.85, 0.85, 0.85);
-    lastSeg->position.y += serpentController->scale.y;
+    lastSeg->position.y -= serpentController->scale.y;
     lastSeg->followDist = serpentController->scale.y;
 
     for (int i = 0; i < 4; i++) {
@@ -94,9 +96,8 @@ Entity* serpent_new(Vector3D position)
         lastSeg->childCount++;
         lastSeg->children[lastSeg->childCount - 1] = newSeg;
         newSeg->parent = lastSeg;
-        newSeg->position.y = lastSeg->position.y + lastSeg->scale.y;
+        newSeg->position.y = lastSeg->position.y - lastSeg->scale.y;
         newSeg->followDist = lastSeg->scale.y;
-        newSeg->rotation.x += 90 * GFC_DEGTORAD;
         newSeg->think = serpent_segment_think;
 
         lastSeg = newSeg;
@@ -105,6 +106,8 @@ Entity* serpent_new(Vector3D position)
     for (int i = 0; i < 8; i++) {
         serpent_add_segment(serpentController);
     }
+
+    camera_set_offset(vector3d(0, 10, 10));
 
     return serpentController;
 }
@@ -126,11 +129,11 @@ void serpent_think(Entity* self)
     }
     if (gfc_input_key_held("s")) {
         self->rotation.x += 0.25 * GFC_DEGTORAD;
-        moving += 1;
+        moving += 2;
     }
     if (gfc_input_key_held("w")) {
         self->rotation.x -= 0.25 * GFC_DEGTORAD;
-        moving -= 1;
+        moving -= 2;
     }
     if (moving != 0) {
         float dx = 0;
@@ -139,13 +142,39 @@ void serpent_think(Entity* self)
 
         dx = sinf(self->rotation.z);
         dy = -cosf(self->rotation.z);
-        dz = sinf(self->rotation.x + 90 * GFC_DEGTORAD);
+        dz = sinf(self->rotation.x);
 
-        self->position.x += dx * 0.15;
-        self->position.y += dy * 0.15;
-        self->position.z += dz * 0.15;
+        self->position.x -= dx * 0.015 * self->scale.y;
+        self->position.y -= dy * 0.015 * self->scale.y;
+        self->position.z -= dz * 0.015 * self->scale.y;
     }
 }
+void serpent_update(Entity* self) {
+    if (!self) return;
+    //BRING THIS BACK LATER!
+    Vector3D camPos = self->position;
+    Vector3D relPos = vector3d(0, -20 * self->scale.y, 20 * self->scale.z);
+    
+    Vector3D camAngles = vector3d(
+        -atanf(relPos.y / relPos.z) + GFC_PI,
+        0,
+        self->rotation.z
+    );
+    
+    camPos.x -= sinf(camAngles.z) * relPos.y;
+    camPos.y += cosf(camAngles.z) * relPos.y;
+    camPos.z -= cosf(camAngles.x) * relPos.z;
+    
+    //slog("Setting camera camera position to (%f, %f, %f), and the serpent's head is at (%f, %f, %f).", camPos.x, camPos.y, camPos.z, self->position.x, self->position.y, self->position.z);
+    gf3d_camera_set_position(camPos);
+    gf3d_camera_set_rotation(camAngles);
+    
+
+
+    //gf3d_camera_set_position(vector3d(0, -100, 20));
+    //gf3d_camera_set_rotation(vector3d(GFC_PI, 0, 0));
+}
+
 void serpent_head_think(Entity* self) {
     if (!self || !self->parent)return;
     if (gfc_input_key_held(" ")) {
@@ -160,7 +189,7 @@ void serpent_head_think(Entity* self) {
     self->position.x = self->parent->position.x;
     self->position.y = self->parent->position.y;
     self->position.z = self->parent->position.z;
-    self->rotation.x = self->parent->rotation.x + self->customFloat * (self->rotSpeed > 0 ? 1 : -1);
+    self->rotation.x = self->parent->rotation.x + self->customFloat * (self->rotSpeed > 0 ? -1 : 1);
     self->rotation.z = self->parent->rotation.z;
 }
 void serpent_lure_think(Entity* self) {
@@ -218,9 +247,8 @@ void serpent_add_segment(Entity* serpent) {
     lastSeg->childCount++;
     lastSeg->children[lastSeg->childCount - 1] = newSeg;
     newSeg->parent = lastSeg;
-    newSeg->position.y = lastSeg->position.y + lastSeg->scale.y;
+    newSeg->position.y = lastSeg->position.y - lastSeg->scale.y;
     newSeg->followDist = lastSeg->scale.y;
-    newSeg->rotation.x += 90 * GFC_DEGTORAD;
     newSeg->think = serpent_segment_think;
 }
 
