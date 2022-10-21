@@ -3,11 +3,7 @@
 
 #include "entity.h"
 
-/**
- * @brief Create a new serpent entity
- * @param position where to spawn the serpent at
- * @return NULL on error, or an serpent entity pointer on success
- */
+
 typedef struct {
     int metobolism; //1-7, starts at 4.
     int lureStrength; //1-7, starts at 4.
@@ -16,7 +12,11 @@ typedef struct {
     int headStart; //1-3, starts at 1.
 
 }SerpentPersStats;
-
+/**
+ * @brief Create a new serpent entity
+ * @param position where to spawn the serpent at
+ * @return NULL on error, or an serpent entity pointer on success
+ */
 Entity* serpent_new(Vector3D position, SerpentPersStats* persStats);
 Entity* serpent_spikeseg_new(Entity* par);
 Entity* serpent_seg_new(Entity* par);

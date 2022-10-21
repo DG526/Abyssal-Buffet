@@ -21,6 +21,7 @@
 #include "entity.h"
 #include "agumon.h"
 #include "serpent.h"
+#include "ai_fish.h"
 #include "player.h"
 #include "world.h"
 
@@ -68,11 +69,11 @@ int main(int argc,char *argv[])
         return 0;
     }
     SJson* saveFile = sj_load("serpentSave.sav");
-    SJson* metabolism;
-    SJson* lureStrength;
-    SJson* stealth;
-    SJson* speed;
-    SJson* headStart;
+    SJson* metabolism = sj_object_new();
+    SJson* lureStrength = sj_object_new();
+    SJson* stealth = sj_object_new();
+    SJson* speed = sj_object_new();
+    SJson* headStart = sj_object_new();
     if (!saveFile) {
         slog("Creating a new save file...");
         saveFile = sj_object_new();
@@ -94,14 +95,20 @@ int main(int argc,char *argv[])
         metabolism = sj_object_get_value(saveFile, "metabolism");
         lureStrength = sj_object_get_value(saveFile, "lureStrength");
         stealth = sj_object_get_value(saveFile, "stealth");
-        speed = sj_object_get_value(speed, "metabolism");
-        headStart = sj_object_get_value(headStart, "metabolism");
+        speed = sj_object_get_value(saveFile, "speed");
+        headStart = sj_object_get_value(saveFile, "headStart");
     }
-    sj_get_integer_value(metabolism, sps->metobolism);
-    sj_get_integer_value(lureStrength, sps->lureStrength);
-    sj_get_integer_value(stealth, sps->stealth);
-    sj_get_integer_value(speed, sps->speed);
-    sj_get_integer_value(headStart, sps->headStart);
+    int spVal = 0, success = 0;
+    if (speed)
+        success = 1;
+    sj_get_integer_value(speed, &spVal);
+    slog("%i, Speed is going to be set to %i.", success, spVal);
+
+    sj_get_integer_value(metabolism, &sps->metobolism);
+    sj_get_integer_value(lureStrength, &sps->lureStrength);
+    sj_get_integer_value(stealth, &sps->stealth);
+    sj_get_integer_value(speed, &sps->speed);
+    sj_get_integer_value(headStart, &sps->headStart);
 
     sj_free(saveFile);
     sj_object_free(metabolism);
@@ -110,7 +117,11 @@ int main(int argc,char *argv[])
     sj_object_free(speed);
     sj_object_free(headStart);
 
-    serpent_new(vector3d(0, 0, 25), sps);
+    Entity* serpent = serpent_new(vector3d(0, 0, 25), sps);
+    
+    for (int i = 0; i < 15; i++) {
+        prey_new(vector3d(i * 10, i * 10, 20), 0.5f, 1.5f);
+    }
     
     slog_sync();
     gf3d_camera_set_scale(vector3d(1,1,1));

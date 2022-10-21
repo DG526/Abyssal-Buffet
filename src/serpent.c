@@ -46,6 +46,10 @@ Entity* serpent_new(Vector3D position, SerpentPersStats *persStats)
     sd->length = 13;
     sd->persStats = persStats;
 
+    slog("Speed is set to %i", sd->persStats->speed);
+
+    serpentController->customData = sd;
+
     serpentController->childCount = 4;
     Entity* serpentTJaw = NULL; Entity* serpentBJaw = NULL; Entity* serpentLure = NULL; Entity* lastSeg = NULL;
     serpentTJaw = entity_new();
@@ -166,9 +170,9 @@ void serpent_think(Entity* self)
         dy = -cosf(self->rotation.z);
         dz = sinf(self->rotation.x);
 
-        self->position.x -= dx * 0.015 * self->scale.y;
-        self->position.y -= dy * 0.015 * self->scale.y;
-        self->position.z += dz * 0.015 * self->scale.y;
+        self->position.x -= dx * 0.015 * self->scale.y * ((SerpentData*)(self->customData))->persStats->speed;
+        self->position.y -= dy * 0.015 * self->scale.y * ((SerpentData*)(self->customData))->persStats->speed;
+        self->position.z += dz * 0.015 * self->scale.y * ((SerpentData*)(self->customData))->persStats->speed;
     }
 }
 void serpent_update(Entity* self) {
