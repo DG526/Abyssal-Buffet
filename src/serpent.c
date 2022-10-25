@@ -3,6 +3,7 @@
 #include "serpent.h"
 #include "gfc_input.h"
 #include "gf3d_camera.h"
+#include "gf3d_vgraphics.h"
 
 
 void serpent_think(Entity* self);
@@ -15,15 +16,6 @@ static int pos = 1, neg = -1;
 //static int i_jawRotMult = 0;
 
 
-
-typedef struct {
-    float health;
-    int size; //determines what can be eaten
-    int length; //how many segments
-    float hunger; //when it reaches 1, serpent loses health
-    float hungerRate;
-    SerpentPersStats* persStats;
-}SerpentData;
 
 Entity* serpent_new(Vector3D position, SerpentPersStats *persStats)
 {
@@ -39,6 +31,7 @@ Entity* serpent_new(Vector3D position, SerpentPersStats *persStats)
         return NULL;
     }
 
+    sd->healthMax = 50;
     sd->health = 50;
     sd->hunger = 0;
     sd->hungerRate = 1.0f / 3.0f / 60.0f;
@@ -144,6 +137,10 @@ void serpent_think(Entity* self)
     if (!self)return;
     //self->rotation.z += .02;
     self->lastTickTime = SDL_GetTicks();
+    if (gfc_input_key_pressed("p")) {
+        ((SerpentData*)(self->customData))->health = ((SerpentData*)(self->customData))->health -8;
+        slog("Health is at %f%%.", ((SerpentData*)(self->customData))->health / ((SerpentData*)(self->customData))->healthMax);
+    }
     int moving = 0;
     if (gfc_input_key_held("d")) {
         self->rotation.z -= 0.25 * GFC_DEGTORAD;

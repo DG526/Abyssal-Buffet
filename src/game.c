@@ -118,7 +118,8 @@ int main(int argc,char *argv[])
     sj_object_free(headStart);
 
     Entity* serpent = serpent_new(vector3d(0, 0, 25), sps);
-    
+    Sprite* HBar = gf3d_sprite_load("images/HPBar.png", 500, 10, 1);
+
     for (int i = 0; i < 15; i++) {
         prey_new(vector3d(i * 10, i * 10, 20), 0.5f, 1.5f);
     }
@@ -150,6 +151,10 @@ int main(int argc,char *argv[])
                 entity_draw_all();
             //2D draws
                 gf3d_sprite_draw(mouse,vector2d(mousex,mousey),vector2d(2,2),(Uint32)mouseFrame);
+                if (((SerpentData*)(serpent->customData))->health > 0) {
+                    gf3d_sprite_draw(HBar, vector2d((gf3d_vgraphics_get_view_extent().width - 500) / 2, gf3d_vgraphics_get_view_extent().height - 20),
+                        vector2d((((SerpentData*)(serpent->customData))->health / ((SerpentData*)(serpent->customData))->healthMax) * 2, 3), 0);
+                }
         gf3d_vgraphics_render_end();
 
         if (gfc_input_command_down("exit"))done = 1; // exit condition

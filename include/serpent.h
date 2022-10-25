@@ -2,6 +2,7 @@
 #define __SERPENT_H__
 
 #include "entity.h"
+#include "gf3d_sprite.h"
 
 
 typedef struct {
@@ -12,6 +13,16 @@ typedef struct {
     int headStart; //1-3, starts at 1.
 
 }SerpentPersStats;
+
+typedef struct {
+    float health, healthMax;
+    int size; //determines what can be eaten
+    int length; //how many segments
+    float hunger; //when it reaches 1, serpent loses health
+    float hungerRate;
+    Sprite* hpBar;
+    SerpentPersStats* persStats;
+}SerpentData;
 /**
  * @brief Create a new serpent entity
  * @param position where to spawn the serpent at
