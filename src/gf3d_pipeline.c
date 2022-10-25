@@ -8,8 +8,6 @@
 #include "gf3d_swapchain.h"
 #include "gf3d_vgraphics.h"
 #include "gf3d_shaders.h"
-#include "gf3d_model.h"
-#include "gf3d_sprite.h"
 #include "gf3d_pipeline.h"
 
 extern int __DEBUG;
@@ -96,7 +94,7 @@ VkFormat gf3d_pipeline_find_supported_format(VkFormat * candidates, Uint32 candi
     }
 
     slog("failed to find supported format!");
-    return VK_NULL_HANDLE;
+    return VK_FORMAT_UNDEFINED;
 }
 
 VkFormat gf3d_pipeline_find_depth_format()
@@ -177,142 +175,55 @@ int gf3d_pipeline_render_pass_create(VkDevice device,SJson *config,VkRenderPass 
     return 1;
 }
 
-void gf3d_pipeline_render_pass_setup(Pipeline *pipe)
+
+int gf3d_pipelin_depth_stencil_create_info_from_json(SJson *json,VkPipelineDepthStencilStateCreateInfo *depthStencil)
 {
-    VkAttachmentDescription colorAttachment = {0};
-    VkAttachmentReference colorAttachmentRef = {0};
-    VkSubpassDescription subpass = {0};
-    VkRenderPassCreateInfo renderPassInfo = {0};
-    VkSubpassDependency dependency = {0};
-    VkAttachmentDescription depthAttachment = {0};
-    VkAttachmentReference depthAttachmentRef = {0};
-    VkAttachmentDescription attachments[2];
-    
-    depthAttachmentRef.attachment = 1;
-    depthAttachmentRef.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-    
-    depthAttachment.format = gf3d_pipeline_find_depth_format();
-    depthAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
-    depthAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-    depthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-    depthAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-    depthAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-    depthAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-    depthAttachment.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-
-    dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
-    dependency.dstSubpass = 0;
-    dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-    dependency.srcAccessMask = 0;
-    dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-    dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-
-    colorAttachment.format = gf3d_swapchain_get_format();
-    colorAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
-    colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-    colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-    colorAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-    colorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-    colorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-    colorAttachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
-    
-    colorAttachmentRef.attachment = 0;
-    colorAttachmentRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-
-    subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-    subpass.colorAttachmentCount = 1;
-    subpass.pColorAttachments = &colorAttachmentRef;
-    subpass.pDepthStencilAttachment = &depthAttachmentRef;
-    
-    memcpy(&attachments[0],&colorAttachment,sizeof(VkAttachmentDescription));
-    memcpy(&attachments[1],&depthAttachment,sizeof(VkAttachmentDescription));
-    
-    renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
-    renderPassInfo.attachmentCount = 2;
-    renderPassInfo.pAttachments = attachments;
-    renderPassInfo.subpassCount = 1;
-    renderPassInfo.pSubpasses = &subpass;
-    renderPassInfo.dependencyCount = 1;
-    renderPassInfo.pDependencies = &dependency;
-
-    if (vkCreateRenderPass(pipe->device, &renderPassInfo, NULL, &pipe->renderPass) != VK_SUCCESS)
-    {
-        slog("failed to create render pass!");
-        return;
-    }
+    short int b = VK_FALSE;
+    float f = 0;
+    if ((!json)|| (!depthStencil))return 0;
+    depthStencil->sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
+    depthStencil->pNext = NULL;
+#if defined(VkPipelineDepthStencilStateCreateFlagBits)
+    depthStencil->flags = gf3d_config_depth_stencil_create_flags(sj_object_get_value(json,"flags"));
+#endif
+    b = VK_FALSE;
+    sj_get_bool_value(sj_object_get_value(json,"depthTestEnable"),&b);
+    depthStencil->depthTestEnable = b;
+    b = VK_FALSE;
+    sj_get_bool_value(sj_object_get_value(json,"depthWriteEnable"),&b);
+    depthStencil->depthWriteEnable = b;
+    depthStencil->depthCompareOp = gf3d_config_compar_op_flag_from_str(sj_object_get_value_as_string(json,"depthCompareOp"));
+    b = VK_FALSE;
+    sj_get_bool_value(sj_object_get_value(json,"depthBoundsTestEnable"),&b);
+    depthStencil->depthBoundsTestEnable = b;
+    b = VK_FALSE;
+    sj_get_bool_value(sj_object_get_value(json,"stencilTestEnable"),&b);
+    depthStencil->stencilTestEnable = b;
+    f = 0;
+    sj_get_float_value(sj_object_get_value(json,"minDepthBounds"),&f);
+    depthStencil->minDepthBounds = f;
+    f = 0;
+    sj_get_float_value(sj_object_get_value(json,"maxDepthBounds"),&f);
+    depthStencil->maxDepthBounds = f;
+    return 1;
 }
 
-void gf3d_pipeline_sprite_render_pass_setup(Pipeline *pipe)
-{
-    VkAttachmentDescription colorAttachment = {0};
-    VkAttachmentReference colorAttachmentRef = {0};
-    VkSubpassDescription subpass = {0};
-    VkRenderPassCreateInfo renderPassInfo = {0};
-    VkSubpassDependency dependency = {0};
-    VkAttachmentDescription depthAttachment = {0};
-    VkAttachmentReference depthAttachmentRef = {0};
-    VkAttachmentDescription attachments[2];
-    
-    depthAttachmentRef.attachment = 1;
-    depthAttachmentRef.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-    
-    depthAttachment.format = gf3d_pipeline_find_depth_format();
-    depthAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
-    depthAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
-    depthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-    depthAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-    depthAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-    depthAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-    depthAttachment.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-
-    dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
-    dependency.dstSubpass = 0;
-    dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-    dependency.srcAccessMask = 0;
-    dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-    dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-
-    colorAttachment.format = gf3d_swapchain_get_format();
-    colorAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
-    colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
-    colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-    colorAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-    colorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-    colorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-    colorAttachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
-    
-    colorAttachmentRef.attachment = 0;
-    colorAttachmentRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-
-    subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-    subpass.colorAttachmentCount = 1;
-    subpass.pColorAttachments = &colorAttachmentRef;
-    subpass.pDepthStencilAttachment = &depthAttachmentRef;
-    
-    memcpy(&attachments[0],&colorAttachment,sizeof(VkAttachmentDescription));
-    memcpy(&attachments[1],&depthAttachment,sizeof(VkAttachmentDescription));
-    
-    renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
-    renderPassInfo.attachmentCount = 2;
-    renderPassInfo.pAttachments = attachments;
-    renderPassInfo.subpassCount = 1;
-    renderPassInfo.pSubpasses = &subpass;
-    renderPassInfo.dependencyCount = 1;
-    renderPassInfo.pDependencies = &dependency;
-
-    if (vkCreateRenderPass(pipe->device, &renderPassInfo, NULL, &pipe->renderPass) != VK_SUCCESS)
-    {
-        slog("failed to create render pass!");
-        return;
-    }
-}
-
-Pipeline *gf3d_pipeline_create_from_config(VkDevice device,const char *configFile,VkExtent2D extent,Uint32 descriptorCount)
+Pipeline *gf3d_pipeline_create_from_config(
+    VkDevice device,
+    const char *configFile,
+    VkExtent2D extent,
+    Uint32 descriptorCount,
+    const VkVertexInputBindingDescription* vertexInputDescription,
+    const VkVertexInputAttributeDescription * vertextInputAttributeDescriptions,
+    Uint32 vertexAttributeCount,
+    VkDeviceSize bufferSize)
 {
     SJson *config,*file, *item;
+    const char *str;
     Pipeline *pipe;
     const char *vertFile = NULL;
     const char *fragFile = NULL;
+    Uint32 draw_calls = 1024;
     VkRect2D scissor = {0};
     VkViewport viewport = {0};
     VkGraphicsPipelineCreateInfo pipelineInfo = {0};
@@ -329,6 +240,11 @@ Pipeline *gf3d_pipeline_create_from_config(VkDevice device,const char *configFil
     VkPipelineColorBlendStateCreateInfo colorBlending = {0};
     VkPipelineDepthStencilStateCreateInfo depthStencil = {0};
     
+    if (!vertexInputDescription)
+    {
+        slog("must provide vertexInputDescription to create the pipeline");
+        return NULL;
+    }
     if (!configFile)return NULL;
     file = sj_load(configFile);
     if (!file)
@@ -392,25 +308,18 @@ Pipeline *gf3d_pipeline_create_from_config(VkDevice device,const char *configFil
     pipe->device = device;
     pipe->descriptorSetCount = descriptorCount;
     
-    //TODO: from config:
-    depthStencil.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
-    depthStencil.depthTestEnable = VK_TRUE;
-    depthStencil.depthWriteEnable = VK_TRUE;
-    depthStencil.depthCompareOp = VK_COMPARE_OP_LESS;    
-    depthStencil.depthBoundsTestEnable = VK_FALSE;
-    depthStencil.minDepthBounds = 0.0f; // Optional
-    depthStencil.maxDepthBounds = 1.0f; // Optional
-    depthStencil.stencilTestEnable = VK_FALSE;
+    gf3d_pipelin_depth_stencil_create_info_from_json(sj_object_get_value(config,"depthStencil"),&depthStencil);
+    inputAssembly.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
+    str = sj_get_string_value(sj_object_get_value(config,"topology"));
+    inputAssembly.topology = gf3d_config_primitive_topology_from_str(str);
+    inputAssembly.primitiveRestartEnable = VK_FALSE;
     
     vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
     vertexInputInfo.vertexBindingDescriptionCount = 1;
-    vertexInputInfo.pVertexBindingDescriptions = gf3d_mesh_get_bind_description(); // Optional
-    vertexInputInfo.pVertexAttributeDescriptions = gf3d_mesh_get_attribute_descriptions(&vertexInputInfo.vertexAttributeDescriptionCount); // Optional    
+    vertexInputInfo.pVertexBindingDescriptions = vertexInputDescription;
+    vertexInputInfo.vertexAttributeDescriptionCount = vertexAttributeCount;
+    vertexInputInfo.pVertexAttributeDescriptions = vertextInputAttributeDescriptions;
 
-    // TODO: pull all this information from config file
-    inputAssembly.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
-    inputAssembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
-    inputAssembly.primitiveRestartEnable = VK_FALSE;
     
     viewport.x = 0.0f;
     viewport.y = 0.0f;
@@ -429,36 +338,12 @@ Pipeline *gf3d_pipeline_create_from_config(VkDevice device,const char *configFil
     viewportState.scissorCount = 1;
     viewportState.pScissors = &scissor;
     
-    rasterizer.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
-    rasterizer.depthClampEnable = VK_FALSE;
-    rasterizer.rasterizerDiscardEnable = VK_FALSE;
-    rasterizer.polygonMode = VK_POLYGON_MODE_FILL;
-    rasterizer.lineWidth = 1.0f;
-//    rasterizer.cullMode = VK_CULL_MODE_BACK_BIT;
-//    rasterizer.frontFace = VK_FRONT_FACE_CLOCKWISE;
-    rasterizer.cullMode = VK_CULL_MODE_BACK_BIT;
-    rasterizer.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
-    rasterizer.depthBiasEnable = VK_FALSE;
-    rasterizer.depthBiasConstantFactor = 0.0f; // Optional
-    rasterizer.depthBiasClamp = 0.0f; // Optional
-    rasterizer.depthBiasSlopeFactor = 0.0f; // Optional
+    rasterizer = gf3d_config_pipline_rasterization_state_create_info(sj_object_get_value(config,"rasterizer"));
 
-    multisampling.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
-    multisampling.sampleShadingEnable = VK_FALSE;
-    multisampling.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
-    multisampling.minSampleShading = 1.0f; // Optional
-    multisampling.pSampleMask = NULL; // Optional
-    multisampling.alphaToCoverageEnable = VK_FALSE; // Optional
-    multisampling.alphaToOneEnable = VK_FALSE; // Optional
+    multisampling = gf3d_config_pipline_multisample_state_create_info(sj_object_get_value(config,"multisampling"));
 
-    colorBlendAttachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
-    colorBlendAttachment.blendEnable = VK_TRUE;
-    colorBlendAttachment.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
-    colorBlendAttachment.dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
-    colorBlendAttachment.colorBlendOp = VK_BLEND_OP_ADD;
-    colorBlendAttachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
-    colorBlendAttachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
-    colorBlendAttachment.alphaBlendOp = VK_BLEND_OP_ADD;
+    colorBlendAttachment = gf3d_config_pipeline_color_blend_attachment(sj_object_get_value(config,"colorBlendAttachment"));
+
     
     colorBlending.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
     colorBlending.logicOpEnable = VK_FALSE;
@@ -532,174 +417,10 @@ Pipeline *gf3d_pipeline_create_from_config(VkDevice device,const char *configFil
         gf3d_pipeline_free(pipe);
         return NULL;
     }
+    
+    pipe->uboList = gf3d_uniform_buffer_list_new(device,bufferSize,draw_calls,gf3d_swapchain_get_swap_image_count());
+    
     if (__DEBUG)slog("pipeline created from file '%s'",configFile);
-    return pipe;
-}
-
-Pipeline *gf3d_pipeline_basic_sprite_create(VkDevice device,const char *vertFile,const char *fragFile,VkExtent2D extent,Uint32 descriptorCount)
-{
-    Pipeline *pipe;
-    VkRect2D scissor = {0};
-    VkViewport viewport = {0};
-    VkGraphicsPipelineCreateInfo pipelineInfo = {0};
-    VkPipelineLayoutCreateInfo pipelineLayoutInfo = {0};
-    VkPipelineViewportStateCreateInfo viewportState = {0};
-    VkPipelineRasterizationStateCreateInfo rasterizer = {0};
-    VkPipelineShaderStageCreateInfo shaderStages[2];
-    VkPipelineShaderStageCreateInfo vertShaderStageInfo = {0};
-    VkPipelineShaderStageCreateInfo fragShaderStageInfo = {0};
-    VkPipelineVertexInputStateCreateInfo vertexInputInfo = {0};
-    VkPipelineInputAssemblyStateCreateInfo inputAssembly = {0};
-    VkPipelineMultisampleStateCreateInfo multisampling = {0};
-    VkPipelineColorBlendAttachmentState colorBlendAttachment = {0};
-    VkPipelineColorBlendStateCreateInfo colorBlending = {0};
-    VkPipelineDepthStencilStateCreateInfo depthStencil = {0};
-    
-    pipe = gf3d_pipeline_new();
-    if (!pipe)return NULL;
-
-    pipe->vertShader = gf3d_shaders_load_data(vertFile,&pipe->vertSize);
-    pipe->fragShader = gf3d_shaders_load_data(fragFile,&pipe->fragSize);
-    
-    pipe->vertModule = gf3d_shaders_create_module(pipe->vertShader,pipe->vertSize,device);
-    pipe->fragModule = gf3d_shaders_create_module(pipe->fragShader,pipe->fragSize,device);
-
-    pipe->device = device;
-    pipe->descriptorSetCount = descriptorCount;
-    
-    depthStencil.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
-    depthStencil.depthTestEnable = VK_FALSE;
-    depthStencil.depthWriteEnable = VK_TRUE;
-    depthStencil.depthCompareOp = VK_COMPARE_OP_LESS;    
-    depthStencil.depthBoundsTestEnable = VK_FALSE;
-    depthStencil.minDepthBounds = 0.0f; // Optional
-    depthStencil.maxDepthBounds = 1.0f; // Optional
-    depthStencil.stencilTestEnable = VK_FALSE;
-
-    vertShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-    vertShaderStageInfo.stage = VK_SHADER_STAGE_VERTEX_BIT;
-    vertShaderStageInfo.module = pipe->vertModule;
-    vertShaderStageInfo.pName = "main";
-    
-    fragShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-    fragShaderStageInfo.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
-    fragShaderStageInfo.module = pipe->fragModule;
-    fragShaderStageInfo.pName = "main";
-    
-    shaderStages[0] = vertShaderStageInfo;
-    shaderStages[1] = fragShaderStageInfo;
-    
-    vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-    vertexInputInfo.vertexBindingDescriptionCount = 1;
-    vertexInputInfo.pVertexBindingDescriptions = gf3d_sprite_get_bind_description(); // Optional
-    vertexInputInfo.pVertexAttributeDescriptions = gf3d_sprite_get_attribute_descriptions(&vertexInputInfo.vertexAttributeDescriptionCount); // Optional    
-
-    // TODO: pull all this information from config file
-    inputAssembly.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
-    inputAssembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
-    inputAssembly.primitiveRestartEnable = VK_FALSE;
-    
-    viewport.x = 0.0f;
-    viewport.y = 0.0f;
-    viewport.width = (float) extent.width;
-    viewport.height = (float) extent.height;
-    viewport.minDepth = 0.0f;
-    viewport.maxDepth = 1.0f;
-    
-    scissor.offset.x = 0;
-    scissor.offset.y = 0;
-    scissor.extent = extent;
-    
-    viewportState.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
-    viewportState.viewportCount = 1;
-    viewportState.pViewports = &viewport;
-    viewportState.scissorCount = 1;
-    viewportState.pScissors = &scissor;
-    
-    rasterizer.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
-    rasterizer.depthClampEnable = VK_FALSE;
-    rasterizer.rasterizerDiscardEnable = VK_FALSE;
-    rasterizer.polygonMode = VK_POLYGON_MODE_FILL;
-    rasterizer.lineWidth = 1.0f;
-//    rasterizer.cullMode = VK_CULL_MODE_BACK_BIT;
-//    rasterizer.frontFace = VK_FRONT_FACE_CLOCKWISE;
-    rasterizer.cullMode = VK_CULL_MODE_NONE;
-    rasterizer.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
-    rasterizer.depthBiasEnable = VK_FALSE;
-    rasterizer.depthBiasConstantFactor = 0.0f; // Optional
-    rasterizer.depthBiasClamp = 0.0f; // Optional
-    rasterizer.depthBiasSlopeFactor = 0.0f; // Optional
-
-    multisampling.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
-    multisampling.sampleShadingEnable = VK_FALSE;
-    multisampling.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
-    multisampling.minSampleShading = 1.0f; // Optional
-    multisampling.pSampleMask = NULL; // Optional
-    multisampling.alphaToCoverageEnable = VK_FALSE; // Optional
-    multisampling.alphaToOneEnable = VK_FALSE; // Optional
-
-    colorBlendAttachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
-    colorBlendAttachment.blendEnable = VK_TRUE;
-    colorBlendAttachment.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
-    colorBlendAttachment.dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
-    colorBlendAttachment.colorBlendOp = VK_BLEND_OP_ADD;
-    colorBlendAttachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
-    colorBlendAttachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
-    colorBlendAttachment.alphaBlendOp = VK_BLEND_OP_ADD;
-    
-    colorBlending.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
-    colorBlending.logicOpEnable = VK_FALSE;
-    colorBlending.logicOp = VK_LOGIC_OP_COPY; // Optional
-    colorBlending.attachmentCount = 1;
-    colorBlending.pAttachments = &colorBlendAttachment;
-    colorBlending.blendConstants[0] = 0.0f; // Optional
-    colorBlending.blendConstants[1] = 0.0f; // Optional
-    colorBlending.blendConstants[2] = 0.0f; // Optional
-    colorBlending.blendConstants[3] = 0.0f; // Optional
-    
-    gf3d_pipeline_create_basic_model_descriptor_pool(pipe);
-    gf3d_pipeline_create_basic_model_descriptor_set_layout(pipe);
-    gf3d_pipeline_create_descriptor_sets(pipe);
-    
-    pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-    pipelineLayoutInfo.setLayoutCount = 1; // Optional
-    pipelineLayoutInfo.pSetLayouts = &pipe->descriptorSetLayout; // Optional
-    pipelineLayoutInfo.pushConstantRangeCount = 0; // Optional
-    pipelineLayoutInfo.pPushConstantRanges = NULL; // Optional
-
-    gf3d_pipeline_sprite_render_pass_setup(pipe);
-    
-    if (vkCreatePipelineLayout(device, &pipelineLayoutInfo, NULL, &pipe->pipelineLayout) != VK_SUCCESS)
-    {
-        slog("failed to create pipeline layout!");
-        gf3d_pipeline_free(pipe);
-        return NULL;
-    }
-    
-    pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
-    pipelineInfo.stageCount = 2;
-    pipelineInfo.pStages = shaderStages;
-    pipelineInfo.pVertexInputState = &vertexInputInfo;
-    pipelineInfo.pInputAssemblyState = &inputAssembly;
-    pipelineInfo.pViewportState = &viewportState;
-    pipelineInfo.pRasterizationState = &rasterizer;
-    pipelineInfo.pMultisampleState = &multisampling;
-    pipelineInfo.pDepthStencilState = NULL; // Optional
-    pipelineInfo.pColorBlendState = &colorBlending;
-    pipelineInfo.pDynamicState = NULL; // Optional
-    pipelineInfo.layout = pipe->pipelineLayout;
-    pipelineInfo.renderPass = pipe->renderPass;
-    pipelineInfo.subpass = 0;
-    pipelineInfo.basePipelineHandle = VK_NULL_HANDLE; // Optional
-    pipelineInfo.basePipelineIndex = -1; // Optional
-    pipelineInfo.pDepthStencilState = &depthStencil;
-    
-    if (vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &pipelineInfo, NULL, &pipe->pipeline) != VK_SUCCESS)
-    {   
-        slog("failed to create graphics pipeline!");
-        gf3d_pipeline_free(pipe);
-        return NULL;
-    }
     return pipe;
 }
 
@@ -708,6 +429,11 @@ void gf3d_pipeline_free(Pipeline *pipe)
     int i;
     if (!pipe)return;
     if (!pipe->inUse)return;
+    if (pipe->uboList)
+    {
+        gf3d_uniform_buffer_list_free(pipe->uboList);
+    }
+
     if (pipe->descriptorCursor)
     {
         free(pipe->descriptorCursor);
@@ -719,7 +445,6 @@ void gf3d_pipeline_free(Pipeline *pipe)
         {
             if (pipe->descriptorPool[i] != VK_NULL_HANDLE)
             {
-                slog("cleaning up pipeline descriptor pool");
                 vkDestroyDescriptorPool(pipe->device, pipe->descriptorPool[i], NULL);
             }
         }
@@ -773,7 +498,6 @@ void gf3d_pipeline_create_basic_model_descriptor_pool(Pipeline *pipe)
         slog("no pipeline provided");
         return;
     }
-    slog("attempting to make %i descriptor pools of size %i",gf3d_pipeline.chainLength,pipe->descriptorSetCount);
     poolSize[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
     poolSize[0].descriptorCount = pipe->descriptorSetCount;
     poolSize[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
@@ -799,12 +523,20 @@ void gf3d_pipeline_create_basic_model_descriptor_pool(Pipeline *pipe)
 void gf3d_pipeline_reset_frame(Pipeline *pipe,Uint32 frame)
 {
     if (!pipe)return;
+    gf3d_uniform_buffer_list_clear(pipe->uboList,frame);
     if (frame >= gf3d_pipeline.chainLength)
     {
         slog("frame %i outside the range of supported descriptor Pools (%i)",frame,gf3d_pipeline.chainLength);
         return;
     }
     pipe->descriptorCursor[frame] = 0;
+    pipe->commandBuffer = gf3d_command_rendering_begin(frame,pipe);
+}
+
+void gf3d_pipeline_submit_commands(Pipeline *pipe)
+{
+    if (!pipe)return;
+    gf3d_command_rendering_end(pipe->commandBuffer);
 }
 
 void gf3d_pipeline_create_descriptor_sets(Pipeline *pipe)

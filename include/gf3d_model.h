@@ -22,6 +22,8 @@
     SOFTWARE.
 */
 
+#include "simple_json.h"
+
 #include "gfc_types.h"
 #include "gfc_vector.h"
 #include "gfc_matrix.h"
@@ -41,32 +43,73 @@ typedef struct
     Mesh                    *   mesh;
     Texture                 *   texture;
     VkDescriptorSet         *   descriptorSet;
-    VkBuffer                *   uniformBuffers;
-    VkDeviceMemory          *   uniformBuffersMemory;
-    Uint32                      uniformBufferCount;
 }Model;
 
+/**
+ * @brief setup the model manager
+ * @param max_models the maximum number of models that can be held in memory
+ * @param chain_length how many swap chains are supported
+ * @param device the logical device to use
+ */
+void gf3d_model_manager_init(Uint32 max_models);
 
-void gf3d_model_manager_init(Uint32 max_models,Uint32 chain_length,VkDevice device);
-
-Model * gf3d_model_load(char * filename);
+/**
+ * @brief get a blank model address
+ * @return NULL on full, or a pointer to a blank model
+ */
 Model * gf3d_model_new();
+
+/**
+ * @brief load a model and texture from a config file that describe where the mesh data and texture data can be found
+ * texture is in images><filename>,png
+ * @param filename the common filename to load by
+ * @return NULL on error, or the loaded model data otherwise
+ */
+Model * gf3d_model_load(const char * filename);
+
+/**
+ * @brief load a model by its model file path and texture file path
+ * @param modelFile where to find the model obj file
+ * @param textureFile where to find the image for the texture
+ * @return NULL on error or the model file otherwise.  
+ */
+Model * gf3d_model_load_full(const char * modelFile,const char *textureFile);
+
+/**
+ * @brief load a model from config file
+ * @param json the json config to parse
+ * @return NULL on error, or the json 
+ */
+Model * gf3d_model_load_from_config(SJson *json);
+
 /**
  * @brief queue up a model for rendering
  * @param model the model to render
  * @param modelMat the model matrix (MVP)
+ * @param colorMod color modulation (values from 0 to 1);
+ * @param ambient how much ambient light there is
  */
-void gf3d_model_draw(Model *model,Matrix4 modelMat);
-void gf3d_model_free(Model *model);
+void gf3d_model_draw(Model *model,Matrix4 modelMat,Vector4D colorMod,Vector4D ambient);
 
 /**
- * @brief update the descriptorSet with the model data needed to submit the draw command for the model provided
- * @param model the model data to populate the descriptor set with
- * @param descriptSet the descriptorSet to populate
- * @param chainIndex the swap chain frame to do this for
- * @param modelMat the matrix to transform the model by
+ * @brief queue up a model for rendering as highlight wireframe
+ * @param model the model to render
+ * @param modelMat the model matrix (MVP)
+ * @param highlightColor the color of the outline
  */
-void gf3d_model_update_basic_model_descriptor_set(Model *model,VkDescriptorSet descriptorSet,Uint32 chainIndex,Matrix4 modelMat);
+void gf3d_model_draw_highlight(Model *model,Matrix4 modelMat,Vector4D highlight);
 
+/**
+ * @brief queue up a model for rendering as a sky
+ * @param model the model to render
+ * @param modelMat the model matrix (MVP)
+ * @param color the color adjustement (gfc_color(1,1,1,1) for no color change
+ */
+void gf3d_model_draw_sky(Model *model,Matrix4 modelMat,Color color);
+
+/**
+ * @brief free a model
+ */
+void gf3d_model_free(Model *model);
 
 #endif

@@ -51,9 +51,16 @@ Entity *entity_new()
             entity_manager.entity_list[i].scale.x = 1;
             entity_manager.entity_list[i].scale.y = 1;
             entity_manager.entity_list[i].scale.z = 1;
+<<<<<<< HEAD
             entity_manager.entity_list[i].localScale.x = 1;
             entity_manager.entity_list[i].localScale.y = 1;
             entity_manager.entity_list[i].localScale.z = 1;
+=======
+            
+            entity_manager.entity_list[i].color = gfc_color(1,1,1,1);
+            entity_manager.entity_list[i].selectedColor = gfc_color(1,1,1,1);
+            
+>>>>>>> 44df97f3c129a8df28592b55e211cae4afea3812
             return &entity_manager.entity_list[i];
         }
     }
@@ -73,7 +80,15 @@ void entity_free(Entity *self)
 void entity_draw(Entity *self)
 {
     if (!self)return;
-    gf3d_model_draw(self->model,self->modelMat);
+    if (self->hidden)return;
+    gf3d_model_draw(self->model,self->modelMat,gfc_color_to_vector4f(self->color),vector4d(1,1,1,1));
+    if (self->selected)
+    {
+        gf3d_model_draw_highlight(
+            self->model,
+            self->modelMat,
+            gfc_color_to_vector4f(self->selectedColor));
+    }
 }
 
 void entity_draw_all()
@@ -118,13 +133,18 @@ void entity_update(Entity *self)
     vector3d_add(self->velocity,self->acceleration,self->velocity);
     
     gfc_matrix_identity(self->modelMat);
+<<<<<<< HEAD
     Vector3D truescale = vector3d(self->scale.x * self->localScale.x, self->scale.y * self->localScale.y, self->scale.z * self->localScale.z);
     gfc_matrix_scale(self->modelMat,truescale);
     
     gfc_matrix_rotate(self->modelMat,self->modelMat,self->rotation.z,vector3d(0,0,1));
     gfc_matrix_rotate(self->modelMat,self->modelMat,self->rotation.y,vector3d(0,1,0));
     gfc_matrix_rotate(self->modelMat,self->modelMat,self->rotation.x,vector3d(1,0,0));
+=======
+>>>>>>> 44df97f3c129a8df28592b55e211cae4afea3812
     
+    gfc_matrix_scale(self->modelMat,self->scale);
+    gfc_matrix_rotate_by_vector(self->modelMat,self->modelMat,self->rotation);
     gfc_matrix_translate(self->modelMat,self->position);
     
     if (self->update)self->update(self);

@@ -5,6 +5,8 @@
 
 #include "gfc_types.h"
 
+#include "gf3d_uniform_buffers.h"
+
 
 typedef struct
 {
@@ -25,6 +27,9 @@ typedef struct
     VkDescriptorSet       **descriptorSets;
     Uint32                  descriptorPoolCount;
     Uint32                  descriptorSetCount;
+    UniformBufferList      *uboList;                /**<for draw calls sent through this pipeline*/
+    VkCommandBuffer         commandBuffer;          /**<for current command*/
+
 }Pipeline;
 
 /**
@@ -55,9 +60,21 @@ Pipeline *gf3d_pipeline_graphics_load(VkDevice device,const char *vertFile,const
  * @param configFile the filepath to the config file
  * @param extent the screen resolution this pipeline will be working towards
  * @param descriptorCount the number of concurrent descriptSets to be suppert per command, ie: how many models you want to support for a draw call  This should be based on maximum number of supported entities or graphic assets
+ * @param vertexInputDescription the vertex input description to use
+ * @param vertextInputAttributeDescriptions list of how the attributes are described
+ * @param vertexAttributeCount how many of the above are provided in the list
+ * @param bufferSize the sizeof() the ubo to be used with this pipeline
  * @returns NULL on error (see logs) or a pointer to a pipeline
 */
-Pipeline *gf3d_pipeline_create_from_config(VkDevice device,const char *configFile,VkExtent2D extent,Uint32 descriptorCount);
+Pipeline *gf3d_pipeline_create_from_config(
+    VkDevice device,
+    const char *configFile,
+    VkExtent2D extent,
+    Uint32 descriptorCount,
+    const VkVertexInputBindingDescription* vertexInputDescription,
+    const VkVertexInputAttributeDescription * vertextInputAttributeDescriptions,
+    Uint32 vertexAttributeCount,
+    VkDeviceSize bufferSize);
 
 /**
  * @brief setup a pipeline for rendering a basic sprite
@@ -83,6 +100,13 @@ VkDescriptorSet * gf3d_pipeline_get_descriptor_set(Pipeline *pipe, Uint32 frame)
  * @param frame the swap chain rendering frame to reset the cursor for
  */
 void gf3d_pipeline_reset_frame(Pipeline *pipe,Uint32 frame);
+
+/**
+ * @brief submit the render calls to the pipeline for this frame.  Called after reset_frame and all draw calls
+ * @param pipe for the pipe in question
+ */
+void gf3d_pipeline_submit_commands(Pipeline *pipe);
+
 
 VkFormat gf3d_pipeline_find_depth_format();
 
