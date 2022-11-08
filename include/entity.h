@@ -100,6 +100,7 @@ int get_predator_count();
  * @param self the entity in question
  */
 void entity_free(Entity *self);
+void entity_free_all();
 
 void fish_free(Entity* self, int isPred);
 

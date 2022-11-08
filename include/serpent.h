@@ -24,9 +24,14 @@ typedef struct {
 }PersCurrencies;
 
 typedef struct {
+    int score;
     float zoom;
     float health, healthMax;
-    int size; //determines what can be eaten or scared
+    float levelUpDisplay;
+    float size; //determines what can be eaten or scared
+    float exp; //When it reaches or exceeds the Threshold, serpent levels up and grows.
+    float expThreshold;
+    int level;
     int length; //how many segments
     float hunger; //when it reaches 1, serpent loses health
     float hungerRate;
@@ -62,8 +67,13 @@ typedef enum {
     HeadStart       = 4
 } UpgrCats;
 
+void levelUp(Entity* target);
+void levelUpPart(Entity* target);
+
 int* getUpgradeCosts(UpgrCats category, int currentLevel, int direction);
 int* getCanUpgrade(UpgrCats category, int currentLevel, int direction, PersCurrencies* wallet); //returns array of 1s on can buy, 0s for any insuffiecient amount.
-void Upgrade(UpgrCats category, int currentLevel, int direction, PersCurrencies* wallet);
+void Upgrade(UpgrCats category, int currentLevel, int direction, PersCurrencies* wallet, SerpentPersStats* target);
+
+void Save(PersCurrencies* wallet, SerpentPersStats* stats);
 
 #endif

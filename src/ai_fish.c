@@ -37,15 +37,17 @@ Entity* prey_new(Vector3D position, float sizeMin, float sizeMax, Entity* serpen
 	Entity* fish = NULL;
 	float size = ((float)rand() / (float)RAND_MAX) * (sizeMax - sizeMin) + sizeMin;
 
-	float seed = ((float)rand() / (float)RAND_MAX) * 3.5;
-	if (seed < 1)
+	float seed = ((float)rand() / (float)RAND_MAX) * 10;
+	if (seed < 3)
 		fish = oddfish_new(position, size, serpent);
-	else if (seed < 2)
+	else if (seed < 5)
 		fish = hogfish_new(position, size, serpent);
-	else if (seed < 3)
+	else if (seed < 7)
 		fish = mossprawn_new(position, size, serpent);
-	else
+	else if (seed < 9)
 		fish = albeyeno_new(position, size, serpent);
+	else
+		fish = orca_new(position, size, serpent);
 	fish->entityType = ET_PREY;
 	fish->onFear = prey_flee;
 	return fish;
@@ -73,6 +75,8 @@ Entity* oddfish_new(Vector3D position, float size, Entity* serpent) {
 	pd->nutrition = 10 * size;
 	pd->normSpeed = 3 * size;
 	pd->fullSpeed = 5 * pd->normSpeed;
+
+	pd->score = pd->nutrition * 0.8f;
 	for (int i = 0; i < 5; i++) {
 		pd->reward[i] = 0;
 	}
@@ -116,6 +120,8 @@ Entity* hogfish_new(Vector3D position, float size, Entity* serpent) {
 	pd->nutrition = 13 * size;
 	pd->normSpeed = 2 * size;
 	pd->fullSpeed = 9 * pd->normSpeed;
+
+	pd->score = pd->nutrition * 0.7f;
 	for (int i = 0; i < 5; i++) {
 		pd->reward[i] = 0;
 	}
@@ -166,16 +172,18 @@ Entity* mossprawn_new(Vector3D position, float size, Entity* serpent) {
 	pd->nutrition = 10 * size;
 	pd->normSpeed = 2 * size;
 	pd->fullSpeed = 4 * pd->normSpeed;
+
+	pd->score = pd->nutrition * 0.6f;
 	for (int i = 0; i < 5; i++) {
 		pd->reward[i] = 0;
 	}
 	pd->reward[0] = (int)floorf(2 * size);
 	float hasGoldite = ((float)rand() / (float)RAND_MAX) * 2 - 1;
 	if (hasGoldite > 0) {
-		pd->reward[1] = (int)floorf(size * 4 / 5);
+		pd->reward[1] = (int)floorf(size * 0.8f);
 	}
 	else {
-		pd->reward[2] = (int)floorf(size * 4 / 5);
+		pd->reward[2] = (int)floorf(size * 0.8f);
 	}
 	vector3d_copy(pd->targetDirection, fish->rotation);
 	vector3d_copy(pd->lastDirection, fish->rotation);
@@ -183,6 +191,62 @@ Entity* mossprawn_new(Vector3D position, float size, Entity* serpent) {
 	pd->snappable = 0;
 
 	fish->model = gf3d_model_load("models/mossprawn.model");
+	fish->think = prey_think_standard;
+	fish->customData = pd;
+	vector3d_copy(fish->position, position);
+	float realSize = size * 0.45f;
+	fish->scale = vector3d(realSize, realSize, realSize);
+
+	fish->bounds = gfc_sphere(fish->position.x, fish->position.y, fish->position.z, 3.5f * realSize);
+	fish->alertBounds = gfc_sphere(fish->position.x, fish->position.y, fish->position.z, 4.5f * realSize);
+	
+	return fish;
+}
+Entity* orca_new(Vector3D position, float size, Entity* serpent) {
+	size = min(size, 11);
+	Entity* fish = NULL;
+	fish = fish_new();
+
+	PreyData* pd = (PreyData*)gfc_allocate_array(sizeof(PreyData), 1);
+
+	if (!fish || !pd) {
+		slog("Whoops, not enough room for an orca!");
+		return NULL;
+	}
+
+	float rotZ = ((float)rand() / (float)RAND_MAX) * GFC_2PI;
+	fish->rotation = vector3d(0, 0, rotZ);
+
+	pd->status = IDLE;
+	pd->serpent = serpent;
+	pd->serpentLure = serpent->children[2];
+	pd->size = size;
+	pd->nutrition = 10 * size;
+	pd->normSpeed = 2 * size;
+	pd->fullSpeed = 2 * pd->normSpeed;
+
+	pd->score = pd->nutrition * 3;
+	for (int i = 0; i < 5; i++) {
+		pd->reward[i] = 0;
+	}
+	pd->reward[0] = (int)floorf(5 * size);
+	float hasGoldite = ((float)rand() / (float)RAND_MAX) * 2 - 1;
+	if (hasGoldite > 0) {
+		pd->reward[1] = (int)floorf(size);
+	}
+	else {
+		pd->reward[2] = (int)floorf(size);
+	}
+	float hasDarkite = ((float)rand() / (float)RAND_MAX) * 10;
+	if (hasGoldite > 9) {
+		pd->reward[3] = 1;
+	}
+	vector3d_copy(pd->targetDirection, fish->rotation);
+	vector3d_copy(pd->lastDirection, fish->rotation);
+
+	pd->snappable = 0;
+
+	fish->model = gf3d_model_load("models/sharkPoacher.model");
 	fish->think = prey_think_standard;
 	fish->customData = pd;
 	vector3d_copy(fish->position, position);
@@ -213,9 +277,11 @@ Entity* albeyeno_new(Vector3D position, float size, Entity* serpent) {
 	pd->serpent = serpent;
 	pd->serpentLure = serpent->children[2];
 	pd->size = size;
-	pd->nutrition = 10 * size;
+	pd->nutrition = 6 * size;
 	pd->normSpeed = 4 * size;
 	pd->fullSpeed = 2 * pd->normSpeed;
+
+	pd->score = pd->nutrition * 3;
 	for (int i = 0; i < 5; i++) {
 		pd->reward[i] = 0;
 	}
@@ -293,7 +359,7 @@ void prey_think_standard(Entity* self) {
 		self->position.z += dz * 0.015 * self->scale.y * pd->normSpeed;
 		vector3d_copy(self->bounds, self->position);
 
-		if (((SerpentData*)(pd->serpent->customData))->luring && gfc_sphere_overlap(self->bounds, pd->serpentLure->fearBounds)) {
+		if (((SerpentData*)(pd->serpent->customData))->luring && ((SerpentData*)(pd->serpent->customData))->size >= pd->size && gfc_sphere_overlap(self->bounds, pd->serpentLure->fearBounds)) {
 			pd->status = ATTRACTED;
 			pd->lastDirection = self->rotation;
 
@@ -415,7 +481,7 @@ void checkForDespawn(Entity* self) {
 		PreyData* pd = ((PreyData*)(self->customData));
 		float difference = vector3d_magnitude_between(self->position, pd->serpent->position);
 
-		if (difference > 70) {
+		if (difference > 70 * ((SerpentData*)(((PreyData*)(self->customData))->serpent->customData))->size * pd->size) {
 			fish_free(self, 0);
 		}
 
@@ -426,7 +492,7 @@ void checkForDespawn(Entity* self) {
 		PreyData* pd = ((PreyData*)(self->customData));
 		float difference = vector3d_magnitude_between(self->position, pd->serpent->position);
 
-		if (difference > 90) {
+		if (difference > 90 * ((SerpentData*)(((PreyData*)(self->customData))->serpent->customData))->size * pd->size) {
 			fish_free(self, 1);
 		}
 

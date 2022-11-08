@@ -98,6 +98,20 @@ void entity_free(Entity *self)
     memset(self,0,sizeof(Entity));
 }
 
+void entity_free_all() {
+    int i;
+    for (i = 0; i < entity_manager.entity_count; i++)
+    {
+        if (!entity_manager.entity_list[i]._inuse)// not used yet
+        {
+            continue;// skip this iteration of the loop
+        }
+        entity_free(&entity_manager.entity_list[i]);
+    }
+    entity_manager.fish_count = 0;
+    entity_manager.pred_count = 0;
+}
+
 void fish_free(Entity* self, int isPred) {
     if (!self)return;
     entity_manager.fish_count -= 1;

@@ -1,0 +1,7 @@
+{
+    "model":
+    {
+        "model":"models/Fish/Prey/sharkPoacher.obj",
+        "texture":"models/Fish/Prey/sharkPoacher.png"
+    }
+}

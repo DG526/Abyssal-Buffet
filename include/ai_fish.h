@@ -7,6 +7,7 @@ typedef enum {
 	IDLE = 0,
 	ATTRACTED,
 	ALERTED,
+	HUNGRY,
 	DEAD
 }FishStatus;
 
@@ -14,7 +15,8 @@ typedef struct {
 	Entity* serpentLure;
 	Entity* serpent;
 	FishStatus status;
-	float nutrition;
+	int score;
+	float nutrition; //Determines sustinence and growth.
 	int reward[5];
 	float size;
 	float normSpeed;
@@ -41,6 +43,7 @@ Entity* oddfish_new(Vector3D position, float size, Entity* serpent);
 Entity* hogfish_new(Vector3D position, float size, Entity* serpent);
 Entity* mossprawn_new(Vector3D position, float size, Entity* serpent);
 Entity* albeyeno_new(Vector3D position, float size, Entity* serpent);
+Entity* orca_new(Vector3D position, float size, Entity* serpent);
 
 
 void onReachedLure(Entity* self);

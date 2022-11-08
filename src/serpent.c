@@ -6,6 +6,11 @@
 #include "gf3d_vgraphics.h"
 #include "ai_fish.h"
 
+#include "simple_json.h"
+#include "simple_json_string.h"
+#include "simple_json_parse.h"
+#include "simple_json_error.h"
+
 
 void serpent_think(Entity* self);
 void serpent_update(Entity* self);
@@ -32,13 +37,27 @@ Entity* serpent_new(Vector3D position, SerpentPersStats *persStats, PersCurrenci
         return NULL;
     }
 
+    sd->score = 0;
+
     sd->zoom = 1;
 
+    sd->size = 1;
+    sd->exp = 0;
+    sd->expThreshold = 80;
+    sd->level = 1;
+    if (persStats->headStart == 2) {
+        sd->level = 9;
+        
+    }
+    else if (persStats->headStart == 3) {
+        sd->level = 14;
+    }
+    sd->size *= powf(1.2f, sd->level - 1); // Starting size will be 1 at HS Lv1, ~4 at HS Lv2, and ~18 at HS Lv3;
+    sd->levelUpDisplay = 0;
     sd->healthMax = 50;
     sd->health = 50;
     sd->hunger = 0;
-    sd->hungerRate = 1.0f / 3.0f / 60.0f;
-    sd->size = 1;
+    sd->hungerRate = (1.0f / 3.0f / 20.0f) * max(1, (sd->size - 1) * 0.6f) * (1 + 0.6f * (persStats->metabolism - 4));
     sd->length = 13;
     sd->still = 1;
     sd->persStats = persStats;
@@ -118,7 +137,7 @@ Entity* serpent_new(Vector3D position, SerpentPersStats *persStats, PersCurrenci
 
     lastSeg->localScale = vector3d(0.85, 0.85, 0.85);
     lastSeg->position.y -= serpentController->scale.y;
-    lastSeg->followDist = serpentController->scale.y;
+    lastSeg->followDist = serpentController->scale.y * serpentController->scale.y;
 
     for (int i = 0; i < 4; i++) {
         serpentController->children[i]->rotation.x = serpentController->rotation.x;
@@ -141,7 +160,7 @@ Entity* serpent_new(Vector3D position, SerpentPersStats *persStats, PersCurrenci
         lastSeg->children[lastSeg->childCount - 1] = newSeg;
         newSeg->parent = lastSeg;
         newSeg->position.y = lastSeg->position.y - lastSeg->scale.y;
-        newSeg->followDist = lastSeg->scale.y;
+        newSeg->followDist = lastSeg->scale.y * lastSeg->scale.y;
         newSeg->think = serpent_segment_think;
         newSeg->entityType = ET_SERPENTPART;
         newSeg->fearBounds = gfc_sphere(newSeg->position.x, newSeg->position.y, newSeg->position.z, sd->size);
@@ -163,11 +182,22 @@ Entity* serpent_new(Vector3D position, SerpentPersStats *persStats, PersCurrenci
 void serpent_think(Entity* self)
 {
     if (!self)return;
-
-    if (gfc_input_key_pressed("p")) {
-        ((SerpentData*)(self->customData))->health = ((SerpentData*)(self->customData))->health -8;
-        slog("Health is at %f%%.", ((SerpentData*)(self->customData))->health / ((SerpentData*)(self->customData))->healthMax);
+    ((SerpentData*)(self->customData))->levelUpDisplay = max(((SerpentData*)(self->customData))->levelUpDisplay - 1, 0);
+    if (((SerpentData*)(self->customData))->exp >= ((SerpentData*)(self->customData))->expThreshold) {
+        while (((SerpentData*)(self->customData))->exp >= ((SerpentData*)(self->customData))->expThreshold) {
+            levelUp(self);
+            ((SerpentData*)(self->customData))->exp -= ((SerpentData*)(self->customData))->expThreshold;
+            ((SerpentData*)(self->customData))->expThreshold *= 1.2f;
+        }
+        ((SerpentData*)(self->customData))->levelUpDisplay = 1500;
     }
+    ((SerpentData*)(self->customData))->hunger += ((SerpentData*)(self->customData))->hungerRate / 1000.0f;
+    ((SerpentData*)(self->customData))->hunger = min(((SerpentData*)(self->customData))->hunger, 1);
+
+    if (((SerpentData*)(self->customData))->hunger >= 1) {
+        ((SerpentData*)(self->customData))->health -= ((SerpentData*)(self->customData))->size * (float)((SerpentPersStats*)(((SerpentData*)(self->customData))->persStats))->metabolism / 200.0f;
+    }
+    
     ((SerpentData*)(self->customData))->still = 1;
     if (((SerpentData*)(self->customData))->snapping) {
         ((SerpentData*)(self->customData))->still = 0;
@@ -306,6 +336,7 @@ void serpent_lure_think(Entity* self) {
         ((SerpentData*)(self->parent->customData))->snapping = 0;
         float totalNutrition = 0;
         int totalRewards[5] = { 0,0,0,0,0 };
+        int totalBonus = 0;
         for (int i = 0; i < gfc_list_get_count(((SerpentData*)(self->parent->customData))->snappables); i++) {
             PreyData* pd = (PreyData*)(((Entity*)(gfc_list_get_nth(((SerpentData*)(self->parent->customData))->snappables, i)))->customData);
             totalNutrition += pd->nutrition;
@@ -314,16 +345,18 @@ void serpent_lure_think(Entity* self) {
             totalRewards[2] += pd->reward[2];
             totalRewards[3] += pd->reward[3];
             totalRewards[4] += pd->reward[4];
+            totalBonus += pd->score;
         }
-        slog("Obtained %i silverium!", totalRewards[2]);
         (((SerpentData*)(self->parent->customData))->currencies)->mutagen += totalRewards[0];
         (((SerpentData*)(self->parent->customData))->currencies)->goldite += totalRewards[1];
         (((SerpentData*)(self->parent->customData))->currencies)->silverium += totalRewards[2];
         (((SerpentData*)(self->parent->customData))->currencies)->darkite += totalRewards[3];
         (((SerpentData*)(self->parent->customData))->currencies)->orbs += totalRewards[4];
-        ((SerpentData*)(self->parent->customData))->hunger = max(((SerpentData*)(self->parent->customData))->hunger - totalNutrition, 0);
+        ((SerpentData*)(self->parent->customData))->hunger = max(((SerpentData*)(self->parent->customData))->hunger - (1 + ((SerpentPersStats*)((SerpentData*)(self->parent->customData))->persStats)-> metabolism * 0.2) * totalNutrition / 60 / ((SerpentData*)(self->parent->customData))->size, 0);
+        ((SerpentData*)(self->parent->customData))->score += totalBonus;
         gfc_list_foreach(((SerpentData*)(self->parent->customData))->snappables, &crunch);
         gfc_list_clear(((SerpentData*)(self->parent->customData))->snappables);
+        ((SerpentData*)(self->parent->customData))->exp += (1 + ((SerpentPersStats*)((SerpentData*)(self->parent->customData))->persStats)->metabolism * 0.2) * totalNutrition;
     }
     float dx = 0;
     float dy = 0;
@@ -356,10 +389,11 @@ void serpent_segment_think(Entity* self) {
 
     self->rotation = vector3d(vector_angle(sqrtf(diff.x * diff.x + diff.y * diff.y), diff.z) * -GFC_DEGTORAD + GFC_HALF_PI, 0, vector_angle(diff.x, diff.y) * GFC_DEGTORAD);
     
-    self->position.x = self->parent->position.x + diff.x * self->scale.x;
-    self->position.y = self->parent->position.y + diff.y * self->scale.x;
-    self->position.z = self->parent->position.z + diff.z * self->scale.x;
+    self->position.x = self->parent->position.x + diff.x * self->scale.x * self->scale.x;
+    self->position.y = self->parent->position.y + diff.y * self->scale.x * self->scale.x;
+    self->position.z = self->parent->position.z + diff.z * self->scale.x * self->scale.x;
     vector3d_copy(self->fearBounds, self->position);
+    self->fearBounds.r = self->scale.x;
 }
 
 void serpent_add_segment(Entity* serpent) {
@@ -388,17 +422,55 @@ void serpent_add_segment(Entity* serpent) {
     newSeg->localScale = vector3d(0.6, 0.6, 0.6);
     lastSeg->childCount++;
     lastSeg->children[lastSeg->childCount - 1] = newSeg;
-    newSeg->parent = lastSeg;
-    newSeg->position.y = lastSeg->position.y - lastSeg->scale.y;
+    newSeg->parent = lastSeg; float dx = 0;
     newSeg->followDist = lastSeg->scale.y;
+
+    float dy = 0;
+    float dz = 0;
+
+    dx = sinf(lastSeg->rotation.z);
+    dy = -cosf(lastSeg->rotation.z);
+    dz = sinf(lastSeg->rotation.x);
+
+    newSeg->position.x += dx * newSeg->followDist * newSeg->followDist;
+    newSeg->position.y += dy * newSeg->followDist * newSeg->followDist;
+    newSeg->position.z += dz * newSeg->followDist * newSeg->followDist;
+
     newSeg->think = serpent_segment_think;
     newSeg->entityType = ET_SERPENTPART;
     newSeg->fearBounds = gfc_sphere(newSeg->position.x, newSeg->position.y, newSeg->position.z, ((SerpentData*)serpent->customData)->size);
     newSeg->fearsomeness = ((SerpentData*)serpent->customData)->size;
 }
 
+void levelUp(Entity* target) {
+    if (!target) return;
+    ((SerpentData*)target->customData)->level += 1;
+    ((SerpentData*)target->customData)->size *= 1.2f;
+    ((SerpentData*)target->customData)->healthMax *= 1.1f;
+    ((SerpentData*)target->customData)->health = ((SerpentData*)target->customData)->healthMax;
+    target->scale = vector3d_multiply(target->scale, vector3d(1.2f, 1.2f, 1.2f));
+    if (target->childCount > 0) {
+        for (int i = 0; i < target->childCount; i++) {
+            levelUpPart(target->children[i]);
+        }
+    }
+    if ((((SerpentData*)target->customData)->level - 1) % 3 == 0) {
+        ((SerpentData*)target->customData)->length++;
+        serpent_add_segment(target);
+    }
+}
+void levelUpPart(Entity* target) {
+    if (!target) return;
+    target->scale = vector3d_multiply(target->scale, vector3d(1.2f, 1.2f, 1.2f));
+    if (target->childCount > 0) {
+        for (int i = 0; i < target->childCount; i++) {
+            levelUpPart(target->children[i]);
+        }
+    }
+}
+
 int* getUpgradeCosts(UpgrCats category, int currentLevel, int direction) {
-    int costs[5];
+    int costs[5] = {-1,-1,-1,-1,-1};
     switch (category) {
     case Metabolism:
         if (direction == 1) {//upgrade
@@ -696,7 +768,9 @@ int* getUpgradeCosts(UpgrCats category, int currentLevel, int direction) {
 }
 int* getCanUpgrade(UpgrCats category, int currentLevel, int direction, PersCurrencies* wallet) {
     int* costs = getUpgradeCosts(category, currentLevel, direction);
-    int enough[5];
+    int enough[5] = { 0,0,0,0,0 };
+    if (costs[0] == -1) // Cannot upgrade!
+        return enough;
     if (wallet->mutagen >= costs[Mutagen])
         enough[Mutagen] = 1;
     if (wallet->goldite >= costs[Goldite])
@@ -709,9 +783,111 @@ int* getCanUpgrade(UpgrCats category, int currentLevel, int direction, PersCurre
         enough[Orbs] = 1;
     return enough;
 }
-void Upgrade(UpgrCats category, int currentLevel, int direction, PersCurrencies* wallet, Entity* serpent) {
+void Upgrade(UpgrCats category, int currentLevel, int direction, PersCurrencies* wallet, SerpentPersStats* target) {
     int* costs = getUpgradeCosts(category, currentLevel, direction);
-    
+    switch (category) {
+    case Metabolism:
+        target->metabolism = currentLevel + direction;
+        break;
+    case LureStrength:
+        target->metabolism = currentLevel + direction;
+        break;
+    case Speed:
+        target->speed = currentLevel + 1;
+        break;
+    case Stealth:
+        target->metabolism = currentLevel + 1;
+        break;
+    case HeadStart:
+        target->metabolism = currentLevel + 1;
+        break;
+    }
+    wallet->mutagen -= costs[0];
+    wallet->goldite -= costs[1];
+    wallet->silverium -= costs[2];
+    wallet->darkite -= costs[3];
+    wallet->orbs -= costs[4];
+
+    Save(wallet, target);
+}
+
+void Save(PersCurrencies* wallet, SerpentPersStats* stats) {
+    if(!wallet) {
+        slog("UH OH, dropped your wallet!");
+        slog_sync();
+        return;
+    }
+    if(!stats) {
+        slog("UH OH, dropped your stats ID!");
+        slog_sync();
+        return;
+    }
+    SJson* saveFile = sj_load("serpentSave.sav");
+    if (!saveFile) {
+        slog("UH OH, could not read save file correctly!");
+        slog_sync();
+        return;
+    }
+
+    SJson* metabolism = sj_object_new();
+    SJson* lureStrength = sj_object_new();
+    SJson* stealth = sj_object_new();
+    SJson* speed = sj_object_new();
+    SJson* headStart = sj_object_new();
+    SJson* cur1 = sj_object_new();
+    SJson* cur2 = sj_object_new();
+    SJson* cur3 = sj_object_new();
+    SJson* cur4 = sj_object_new();
+    SJson* cur5 = sj_object_new();
+    metabolism = sj_new_int(stats->metabolism);
+    lureStrength = sj_new_int(stats->lureStrength);
+    stealth = sj_new_int(stats->stealth);
+    speed = sj_new_int(stats->speed);
+    headStart = sj_new_int(stats->headStart);
+    cur1 = sj_new_int(wallet->mutagen);
+    cur2 = sj_new_int(wallet->goldite);
+    cur3 = sj_new_int(wallet->silverium);
+    cur4 = sj_new_int(wallet->darkite);
+    cur5 = sj_new_int(wallet->orbs);
+
+    sj_object_delete_key(saveFile, "metabolism");
+    sj_object_delete_key(saveFile, "lureStrength");
+    sj_object_delete_key(saveFile, "stealth");
+    sj_object_delete_key(saveFile, "speed");
+    sj_object_delete_key(saveFile, "headStart");
+    sj_object_delete_key(saveFile, "cur1");
+    sj_object_delete_key(saveFile, "cur2");
+    sj_object_delete_key(saveFile, "cur3");
+    sj_object_delete_key(saveFile, "cur4");
+    sj_object_delete_key(saveFile, "cur5");
+
+    sj_object_insert(saveFile, "metabolism", metabolism);
+    sj_object_insert(saveFile, "lureStrength", lureStrength);
+    sj_object_insert(saveFile, "stealth", stealth);
+    sj_object_insert(saveFile, "speed", speed);
+    sj_object_insert(saveFile, "headStart", headStart);
+    sj_object_insert(saveFile, "cur1", cur1);
+    sj_object_insert(saveFile, "cur2", cur2);
+    sj_object_insert(saveFile, "cur3", cur3);
+    sj_object_insert(saveFile, "cur4", cur4);
+    sj_object_insert(saveFile, "cur5", cur5);
+
+    sj_save(saveFile, "serpentSave.sav");
+
+    sj_free(saveFile);
+    sj_object_free(metabolism);
+    sj_object_free(lureStrength);
+    sj_object_free(stealth);
+    sj_object_free(speed);
+    sj_object_free(headStart);
+    sj_object_free(cur1);
+    sj_object_free(cur2);
+    sj_object_free(cur3);
+    sj_object_free(cur4);
+    sj_object_free(cur5);
+
+    slog("Game Saved.");
+    slog_sync();
 }
 
 /*eol@eof*/

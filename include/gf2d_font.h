@@ -35,6 +35,10 @@
 
 typedef enum
 {
+    FT_BC_Giga,
+    FT_BC_XLarge,
+    FT_BC_Large,
+    FT_BC_Normal,
     FT_Normal,
     FT_Small,
     FT_H1,

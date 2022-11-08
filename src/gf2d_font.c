@@ -152,6 +152,22 @@ int gf2d_fonts_get_count(FILE* file)
 
 FontTypes gf2d_font_type_from_text(const char* buf)
 {
+    if (strcmp(buf, "BC_giga") == 0)
+    {
+        return FT_BC_Giga;
+    }
+    if (strcmp(buf, "BC_xlarge") == 0)
+    {
+        return FT_BC_XLarge;
+    }
+    if (strcmp(buf, "BC_large") == 0)
+    {
+        return FT_BC_Large;
+    }
+    if (strcmp(buf, "BC_normal") == 0)
+    {
+        return FT_BC_Normal;
+    }
     if (strcmp(buf, "normal") == 0)
     {
         return FT_Normal;
