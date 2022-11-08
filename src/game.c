@@ -69,7 +69,7 @@ int main(int argc,char *argv[])
     Sprite* HungerBar = gf2d_sprite_load("images/HungerBar.png", 500, 10, 1);
     Sprite* currencyIcons = gf2d_sprite_load("images/Currencies.png", 32, 32, 5);
 
-    Sprite* LvUp = gf2d_sprite_load("images/LEVEL UP.png", 192, 32, 1);
+    Sprite* LvUp = gf2d_sprite_load("images/LEVEL UP.png", 192 * 2, 32 * 2, 1);
     Sprite* NodePosNeg = gf2d_sprite_load("images/Upgrade Node -+.png", 64, 32, 1);
     Sprite* NodeNeg = gf2d_sprite_load("images/Upgrade Node -.png", 64, 32, 1);
     Sprite* NodePos = gf2d_sprite_load("images/Upgrade Node +.png", 64, 32, 1);
@@ -369,7 +369,7 @@ int main(int argc,char *argv[])
         {
             if (get_fish_count() - get_predator_count() < 10) {
                 spawn_new_around_serpent(serpent, 25 * ((SerpentData*)(serpent->customData))->size, SDL_GetTicks64() - runStartTime);
-                slog("Spawned a new fish.");
+                //slog("Spawned a new fish.");
             }
 
             gfc_input_update();
@@ -427,7 +427,7 @@ int main(int argc,char *argv[])
                     gf2d_font_draw_line_tag(buf, FT_BC_Large, gfc_color(1, 1, 1, 1), vector2d(5, 5));
 
                     if (((SerpentData*)(serpent->customData))->levelUpDisplay > 0) {
-
+                        gf2d_sprite_draw(LvUp, vector2d((gf3d_vgraphics_get_view_extent().width - 384) / 2, (gf3d_vgraphics_get_view_extent().height - 64) / 2), vector2d(2, 2), vector3d(0, 0, 0), gfc_color(1, 1, 1, min(((SerpentData*)(serpent->customData))->levelUpDisplay / 1000, 1)), 0);
                     }
 
                     gf2d_sprite_draw(mouse,vector2d(mousex,mousey),vector2d(2,2),vector3d(0,0,0),gfc_color(0.5,0,0.5,0.9),(Uint32)mouseFrame);

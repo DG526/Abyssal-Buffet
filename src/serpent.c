@@ -57,7 +57,7 @@ Entity* serpent_new(Vector3D position, SerpentPersStats *persStats, PersCurrenci
     sd->healthMax = 50;
     sd->health = 50;
     sd->hunger = 0;
-    sd->hungerRate = (1.0f / 3.0f / 20.0f) * max(1, (sd->size - 1) * 0.6f) * (1 + 0.6f * (persStats->metabolism - 4));
+    sd->hungerRate = (1.0f / 3.0f / 20.0f) * max(1, (sd->size - 1) * 0.6f) * (1 + 0.3f * (persStats->metabolism - 4));
     sd->length = 13;
     sd->still = 1;
     sd->persStats = persStats;
