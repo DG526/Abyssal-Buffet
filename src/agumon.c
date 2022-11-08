@@ -42,30 +42,12 @@ void agumon_update(Entity *self)
 void agumon_think(Entity *self)
 {
     if (!self)return;
-<<<<<<< HEAD
     if(self->randomSeed + SDL_GetTicks() % 3000 < 1000)
         self->rotation.x += -0.002;
     else if(self->randomSeed + SDL_GetTicks() % 3000 < 2000)
         self->rotation.y += -0.002;
     else
         self->rotation.z += -0.002;
-=======
-    switch(self->state)
-    {
-        case ES_idle:
-            //look for player
-            break;
-        case ES_hunt:
-            // set move towards player
-            break;
-        case ES_dead:
-            // remove myself from the system
-            break;
-        case ES_attack:
-            // run through attack animation / deal damage
-            break;
-    }
->>>>>>> 44df97f3c129a8df28592b55e211cae4afea3812
 }
 
 /*eol@eof*/

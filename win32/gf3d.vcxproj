@@ -14,6 +14,7 @@
     <ProjectGuid>{F2888FF8-08AA-47C4-B321-B8090877719F}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
     <RootNamespace>gf3d</RootNamespace>
+    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
@@ -48,8 +49,8 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
     <IncludePath>D:\3D Game Programming\Abyssal-Buffet\gfc\simple_json\include;D:\3D Game Programming\Abyssal-Buffet\gfc\simple_logger\include;D:\3D Game Programming\Abyssal-Buffet\gfc\include;D:\3D Game Programming\Abyssal-Buffet\include;D:\3D Game Programming\libs\SDL2-2.24.0\include;D:\3D Game Programming\libs\SDL2_ttf-2.20.1\include;D:\3D Game Programming\libs\SDL2_mixer-2.6.2\include;D:\3D Game Programming\libs\SDL2_image-2.6.2\include;C:\VulkanSDK\1.3.224.1\Include</IncludePath>
-    <LibraryPath>C:\VulkanSDK\1.3.224.1\Lib32;D:\3D Game Programming\libs\SDL2_image-2.6.2\lib\x86;D:\3D Game Programming\libs\SDL2_mixer-2.6.2\lib\x86;D:\3D Game Programming\libs\SDL2_ttf-2.20.1\lib\x86;D:\3D Game Programming\libs\SDL2-2.24.0\lib\x86</LibraryPath>
-    <OutDir>..</OutDir>
+    <LibraryPath>C:\VulkanSDK\1.3.224.1\Lib32;D:\3D Game Programming\libs\SDL2_image-2.6.2\lib\x86;D:\3D Game Programming\libs\SDL2_mixer-2.6.2\lib\x86;D:\3D Game Programming\libs\SDL2_ttf-2.20.1\lib\x86;D:\3D Game Programming\libs\SDL2-2.24.0\lib\x86;$(LibraryPath)</LibraryPath>
+    <OutDir>..\</OutDir>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -132,6 +133,7 @@
     <ClCompile Include="..\gfc\src\gfc_input.c" />
     <ClCompile Include="..\gfc\src\gfc_list.c" />
     <ClCompile Include="..\gfc\src\gfc_matrix.c" />
+    <ClCompile Include="..\gfc\src\gfc_primitives.c" />
     <ClCompile Include="..\gfc\src\gfc_shape.c" />
     <ClCompile Include="..\gfc\src\gfc_text.c" />
     <ClCompile Include="..\gfc\src\gfc_types.c" />
@@ -140,6 +142,9 @@
     <ClCompile Include="..\src\ai_fish.c" />
     <ClCompile Include="..\src\entity.c" />
     <ClCompile Include="..\src\game.c" />
+    <ClCompile Include="..\src\gf2d_font.c" />
+    <ClCompile Include="..\src\gf2d_overlay.c" />
+    <ClCompile Include="..\src\gf2d_sprite.c" />
     <ClCompile Include="..\src\gf3d_buffers.c" />
     <ClCompile Include="..\src\gf3d_camera.c" />
     <ClCompile Include="..\src\gf3d_commands.c" />
@@ -150,11 +155,12 @@
     <ClCompile Include="..\src\gf3d_mesh.c" />
     <ClCompile Include="..\src\gf3d_model.c" />
     <ClCompile Include="..\src\gf3d_obj_load.c" />
+    <ClCompile Include="..\src\gf3d_particle.c" />
     <ClCompile Include="..\src\gf3d_pipeline.c" />
     <ClCompile Include="..\src\gf3d_shaders.c" />
-    <ClCompile Include="..\src\gf3d_sprite.c" />
     <ClCompile Include="..\src\gf3d_swapchain.c" />
     <ClCompile Include="..\src\gf3d_texture.c" />
+    <ClCompile Include="..\src\gf3d_uniform_buffers.c" />
     <ClCompile Include="..\src\gf3d_validation.c" />
     <ClCompile Include="..\src\gf3d_vgraphics.c" />
     <ClCompile Include="..\src\gf3d_vqueues.c" />

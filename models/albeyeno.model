@@ -1,0 +1,7 @@
+{
+    "model":
+    {
+        "model":"models/Fish/Prey/albeyeno.obj",
+        "texture":"models/Fish/Prey/albeyeno.png"
+    }
+}

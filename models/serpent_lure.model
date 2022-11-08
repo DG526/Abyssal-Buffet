@@ -1,0 +1,7 @@
+{
+    "model":
+    {
+        "model":"models/Serpent/serpent_lure.obj",
+        "texture":"models/Serpent/serpent_lure.png"
+    }
+}

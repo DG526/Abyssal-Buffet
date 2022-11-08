@@ -1,0 +1,7 @@
+{
+    "model":
+    {
+        "model":"models/Fish/Prey/hogfish.obj",
+        "texture":"models/Fish/Prey/hogfish.png"
+    }
+}

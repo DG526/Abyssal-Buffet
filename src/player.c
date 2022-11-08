@@ -64,13 +64,8 @@ void player_think(Entity *self)
     {
         vector3d_add(self->position,self->position,-right);
     }
-<<<<<<< HEAD
     //if (keys[SDL_SCANCODE_SPACE])self->position.z += 0.10;
     if (keys[SDL_SCANCODE_Z])self->position.z -= 0.10;
-=======
-    if (keys[SDL_SCANCODE_SPACE])self->position.z += 1;
-    if (keys[SDL_SCANCODE_Z])self->position.z -= 1;
->>>>>>> 44df97f3c129a8df28592b55e211cae4afea3812
     
     if (keys[SDL_SCANCODE_UP])self->rotation.x -= 0.0050;
     if (keys[SDL_SCANCODE_DOWN])self->rotation.x += 0.0050;
@@ -95,11 +90,7 @@ void player_update(Entity *self)
     Vector2D w;
     
     if (!self)return;
-<<<<<<< HEAD
-    //gf3d_camera_set_position(self->position);
-    //gf3d_camera_set_rotation(self->rotation);
-=======
-    
+    /*
     vector3d_copy(position,self->position);
     vector3d_copy(rotation,self->rotation);
     if (thirdPersonMode)
@@ -112,8 +103,9 @@ void player_update(Entity *self)
         vector3d_add(position,position,-forward);
     }
     gf3d_camera_set_position(position);
-    gf3d_camera_set_rotation(rotation);
->>>>>>> 44df97f3c129a8df28592b55e211cae4afea3812
+    gf3d_camera_set_rotation(rotation);*/
+    //gf3d_camera_set_position(self->position);
+    //gf3d_camera_set_rotation(self->rotation);
 }
 
 /*eol@eof*/

@@ -1,0 +1,8 @@
+{
+  "world": {
+    "model": "models/abyss.model",
+    "position": [ 0, 0, 0 ],
+    "scale": [ 15, 15, 15 ],
+    "rotation": [ 0, 0, 0 ]
+  }
+}

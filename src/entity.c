@@ -4,11 +4,14 @@
 #include "simple_logger.h"
 
 #include "entity.h"
+#include "serpent.h"
 
 typedef struct
 {
     Entity *entity_list;
     Uint32  entity_count;
+    int fish_count;
+    int pred_count;
     
 }EntityManager;
 
@@ -51,21 +54,40 @@ Entity *entity_new()
             entity_manager.entity_list[i].scale.x = 1;
             entity_manager.entity_list[i].scale.y = 1;
             entity_manager.entity_list[i].scale.z = 1;
-<<<<<<< HEAD
             entity_manager.entity_list[i].localScale.x = 1;
             entity_manager.entity_list[i].localScale.y = 1;
             entity_manager.entity_list[i].localScale.z = 1;
-=======
             
             entity_manager.entity_list[i].color = gfc_color(1,1,1,1);
             entity_manager.entity_list[i].selectedColor = gfc_color(1,1,1,1);
             
->>>>>>> 44df97f3c129a8df28592b55e211cae4afea3812
             return &entity_manager.entity_list[i];
         }
     }
     slog("entity_new: no free space in the entity list");
     return NULL;
+}
+Entity* fish_new() {
+    Entity* fish = entity_new();
+    if (fish) {
+        entity_manager.fish_count += 1;
+    }
+    return fish;
+}
+Entity* pred_new() {
+    Entity* fish = entity_new();
+    if (fish) {
+        entity_manager.fish_count += 1;
+        entity_manager.pred_count += 1;
+    }
+    return fish;
+}
+
+int get_fish_count() {
+    return entity_manager.fish_count;
+}
+int get_predator_count() {
+    return entity_manager.pred_count;
 }
 
 void entity_free(Entity *self)
@@ -74,6 +96,13 @@ void entity_free(Entity *self)
     //MUST DESTROY
     gf3d_model_free(self->model);
     memset(self,0,sizeof(Entity));
+}
+
+void fish_free(Entity* self, int isPred) {
+    if (!self)return;
+    entity_manager.fish_count -= 1;
+    entity_manager.pred_count -= isPred;
+    entity_free(self);
 }
 
 
@@ -133,15 +162,13 @@ void entity_update(Entity *self)
     vector3d_add(self->velocity,self->acceleration,self->velocity);
     
     gfc_matrix_identity(self->modelMat);
-<<<<<<< HEAD
     Vector3D truescale = vector3d(self->scale.x * self->localScale.x, self->scale.y * self->localScale.y, self->scale.z * self->localScale.z);
     gfc_matrix_scale(self->modelMat,truescale);
-    
+    /*
     gfc_matrix_rotate(self->modelMat,self->modelMat,self->rotation.z,vector3d(0,0,1));
     gfc_matrix_rotate(self->modelMat,self->modelMat,self->rotation.y,vector3d(0,1,0));
     gfc_matrix_rotate(self->modelMat,self->modelMat,self->rotation.x,vector3d(1,0,0));
-=======
->>>>>>> 44df97f3c129a8df28592b55e211cae4afea3812
+    */
     
     gfc_matrix_scale(self->modelMat,self->scale);
     gfc_matrix_rotate_by_vector(self->modelMat,self->modelMat,self->rotation);
@@ -160,6 +187,105 @@ void entity_update_all()
             continue;// skip this iteration of the loop
         }
         entity_update(&entity_manager.entity_list[i]);
+    }
+}
+
+void entity_collide_check(Entity* ent) {
+    Sphere boundA, boundB;
+    if (!ent) return;
+    memcpy(&boundA, &ent->bounds, sizeof(Sphere));
+    vector3d_add(boundA, boundA, ent->position);
+    for (int i = 0; i < entity_manager.entity_count; i++) {
+        if (!entity_manager.entity_list[i]._inuse)// not used yet
+        {
+            continue;// skip this iteration of the loop
+        }
+        memcpy(&boundB, &entity_manager.entity_list[i].bounds, sizeof(Sphere));
+        vector3d_add(boundB, boundB, entity_manager.entity_list[i].position);
+        if (gfc_sphere_overlap(boundA, boundB)) {
+            //DO SOMETHING!!
+        }
+    }
+}
+void entity_collide_all() {
+    int i;
+    for (i = 0; i < entity_manager.entity_count; i++)
+    {
+        if (!entity_manager.entity_list[i]._inuse)// not used yet
+        {
+            continue;// skip this iteration of the loop
+        }
+        if (!entity_manager.entity_list[i].clips)// does not clip
+        {
+            continue;// skip this iteration of the loop
+        }
+        entity_collide_check(&entity_manager.entity_list[i]);
+    }
+}
+
+void entity_fearCheck(Entity* ent) {
+    Sphere alert, fright;
+    if (!ent) return;
+    memcpy(&alert, &ent->alertBounds, sizeof(Sphere));
+    //vector3d_add(boundA, boundA, ent->position);
+    for (int i = 0; i < entity_manager.entity_count; i++) {
+        if (!entity_manager.entity_list[i]._inuse)// not used yet
+        {
+            continue;// skip this iteration of the loop
+        }
+        if (ent->entityType == ET_SWITCH && entity_manager.entity_list[i].entityType == ET_SWITCH) {
+            continue;
+        }
+        if (entity_manager.entity_list[i].entityType == ET_PREY || entity_manager.entity_list[i].entityType == ET_DEFAULT || entity_manager.entity_list[i].entityType == ET_LURE) {
+            continue;
+        }
+        if (entity_manager.entity_list[i].fearsomeness == 0 || entity_manager.entity_list[i].fearsomeness <= ent->fearThreshold){
+            continue;
+        }
+        memcpy(&fright, &entity_manager.entity_list[i].fearBounds, sizeof(Sphere));
+        if (entity_manager.entity_list[i].entityType == ET_SERPENTCONTROLLER) {
+            if (((SerpentData*)(entity_manager.entity_list[i].customData))->still) {
+                memcpy(&fright, &entity_manager.entity_list[i].bounds, sizeof(Sphere)); //use contact bounds instead.
+            }
+        }
+        if (entity_manager.entity_list[i].entityType == ET_SERPENTPART) {
+            Entity* lead = &entity_manager.entity_list[i];
+            while (lead->parent) {
+                lead = lead->parent;
+            }
+            if (((SerpentData*)(lead->customData))->still) {
+                memcpy(&fright, &entity_manager.entity_list[i].bounds, sizeof(Sphere)); //use contact bounds instead.
+            }
+        }
+        //vector3d_add(fright, fright, entity_manager.entity_list[i].position);
+        if (gfc_sphere_overlap(alert, fright)) {
+            ent->onFear(ent, &entity_manager.entity_list[i]);
+            return;
+        }
+    }
+}
+
+void entity_fearCheck_all() {
+    int i;
+    for (i = 0; i < entity_manager.entity_count; i++)
+    {
+        if (!entity_manager.entity_list[i]._inuse)// not used yet
+        {
+            continue;// skip this iteration of the loop
+        }
+        if (entity_manager.entity_list[i].entityType == ET_DEFAULT ||
+            entity_manager.entity_list[i].entityType == ET_PREDATOR ||
+            entity_manager.entity_list[i].entityType == ET_SERPENTCONTROLLER ||
+            entity_manager.entity_list[i].entityType == ET_SERPENTPART ||
+            entity_manager.entity_list[i].entityType == ET_LURE)// not capable of fear
+        {
+            continue;// skip this iteration of the loop
+        }
+        if (entity_manager.entity_list[i].fearThreshold == -1)// does not fear
+        {
+            continue;// skip this iteration of the loop
+        }
+        entity_collide_check(&entity_manager.entity_list[i]);
     }
 }
 

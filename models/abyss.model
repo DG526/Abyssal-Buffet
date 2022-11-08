@@ -1,0 +1,7 @@
+{
+    "model":
+    {
+        "model":"models/Abyss/Abyss.obj",
+        "texture":"models/Abyss/Abyss.png"
+    }
+}

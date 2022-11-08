@@ -7,28 +7,16 @@
 
 #include "gf3d_model.h"
 
-<<<<<<< HEAD
 typedef enum {
     ET_DEFAULT = 0,
     ET_SERPENTCONTROLLER,
-    ET_SERPENTTJAW,
-    ET_SERPENTBJAW,
-    ET_SERPENTLURE,
-    ET_SERPENTSEG,
+    ET_SERPENTPART,
+    ET_LURE,
     ET_PREY,
     ET_SWITCH,
     ET_PREDATOR
 }EntityType;
-=======
-typedef enum
-{
-    ES_idle = 0,
-    ES_hunt,
-    ES_dead,
-    ES_attack
-}EntityState;
 
->>>>>>> 44df97f3c129a8df28592b55e211cae4afea3812
 
 typedef struct Entity_S
 {
@@ -40,22 +28,27 @@ typedef struct Entity_S
     Uint8       selected;
     Color       selectedColor;      /**<Color for highlighting*/
     
-    Box         bounds; // for collisions
+    Sphere      bounds; // for collisions
+    Sphere      alertBounds; // for alert ranges
+    Sphere      fearBounds; // for alerting others
     int         team;  //same team dont clip
-    int         clips;  // if false, skip collisions
+    int         clips;  // if 1, skip collisions
+    int         mass; //used in calculating collision corrections, if -1 don't budge.
+    int         fearThreshold;  // if -1, skip alert checks; if 0, flee anything scary.
+    int         fearsomeness; // if 0, skip during alert checks
 
     void       (*think)(struct Entity_S *self); /**<pointer to the think function*/
     void       (*update)(struct Entity_S *self); /**<pointer to the update function*/
+    void       (*onFear)(struct Entity_S *self, struct Entity_S *scarer); /**<pointer to the fear function*/
     void       (*draw)(struct Entity_S *self); /**<pointer to an optional extra draw funciton*/
-    void       (*damage)(struct Entity_S *self, float damage, struct Entity_S *inflictor); /**<pointer to the think function*/
-    void       (*onDeath)(struct Entity_S *self); /**<pointer to an funciton to call when the entity dies*/
-    
-    EntityState state;
+
+
+    //void       (*damage)(struct Entity_S *self, float damage, struct Entity_S *inflictor); /**<pointer to the think function*/
+    //void       (*onDeath)(struct Entity_S *self); /**<pointer to an funciton to call when the entity dies*/
     
     Vector3D    position;  
     Vector3D    velocity;
     Vector3D    acceleration;
-<<<<<<< HEAD
     
     Uint32      randomSeed;
     Uint32      lastTickTime;
@@ -72,9 +65,6 @@ typedef struct Entity_S
 
     float customFloat;
     
-=======
-        
->>>>>>> 44df97f3c129a8df28592b55e211cae4afea3812
     Vector3D    scale;
     Vector3D    rotation;
 
@@ -99,12 +89,19 @@ void entity_system_init(Uint32 maxEntities);
  * @return NULL on error or a valid entity pointer otherwise
  */
 Entity *entity_new();
+Entity* fish_new();
+Entity* pred_new();
+
+int get_fish_count();
+int get_predator_count();
 
 /**
  * @brief free a previously created entity from memory
  * @param self the entity in question
  */
 void entity_free(Entity *self);
+
+void fish_free(Entity* self, int isPred);
 
 
 /**
@@ -133,5 +130,9 @@ void entity_think_all();
  * @brief run the update functions for ALL active entities
  */
 void entity_update_all();
+
+void entity_collide_all();
+
+void entity_fearCheck_all();
 
 #endif

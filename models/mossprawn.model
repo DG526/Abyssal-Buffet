@@ -1,0 +1,7 @@
+{
+    "model":
+    {
+        "model":"models/Fish/Prey/mossprawn.obj",
+        "texture":"models/Fish/Prey/mossprawn.png"
+    }
+}

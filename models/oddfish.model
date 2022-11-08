@@ -1,0 +1,7 @@
+{
+    "model":
+    {
+        "model":"models/Fish/Prey/oddfish.obj",
+        "texture":"models/Fish/Prey/oddfish.png"
+    }
+}
