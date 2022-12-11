@@ -11,7 +11,27 @@ typedef enum {
 	DEAD
 }FishStatus;
 
+typedef enum {
+	UNDEF = 0,
+	ODDFISH,
+	HOGFISH,
+	MOSSPRAWN,
+	ALBEYENO,
+	ORCA,
+	SEAHORNET,
+	FREAK
+}FishIdentity;
+
+typedef enum {
+	TGT_CHEMOSYNTHESIS,
+	TGT_LARGEST,
+	TGT_SMALLEST,
+	TGT_NUTRITION,
+	TGT_FIRSTSPOTTED
+}HuntingStrategy;
+
 typedef struct {
+	FishIdentity identity;
 	Entity* serpentLure;
 	Entity* serpent;
 	FishStatus status;
@@ -26,6 +46,17 @@ typedef struct {
 	int snappable;
 	void* additionalData;
 	int fearTimer;
+	int eats;
+	HuntingStrategy strategy;
+	Entity* target;
+	float targetSize;
+	float targetNutrition;
+	float cannibalThreshold;
+	float pursuitLimit;
+	float lungeThreshold;
+	int hunted;
+	Entity* hunter;
+	float damage;
 }PreyData;
 
 /**
@@ -38,6 +69,7 @@ typedef struct {
 Entity* spawn_new_around_serpent(Entity* serpent, float radius, int ticksElapsed);
 
 Entity* prey_new(Vector3D position, float sizeMin, float sizeMax, Entity* serpent);
+Entity* prey_new_from_file(FishIdentity species, Vector3D position, float size, Entity* serpent);
 
 Entity* oddfish_new(Vector3D position, float size, Entity* serpent);
 Entity* hogfish_new(Vector3D position, float size, Entity* serpent);
@@ -48,5 +80,10 @@ Entity* orca_new(Vector3D position, float size, Entity* serpent);
 
 void onReachedLure(Entity* self);
 void prey_flee(Entity* self, Entity* scarer);
+void chaseFish(Entity* self, Entity* target);
+void chaseSerpent(Entity* self, Entity* target);
+int cannibalInvalidityCheck(Entity* self, Entity* target);
+int isOutOfReach(Entity* self, Entity* target);
+int canLunge(Entity* self, Entity* target);
 
 #endif

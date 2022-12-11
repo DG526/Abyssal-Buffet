@@ -31,6 +31,7 @@ typedef struct Entity_S
     Sphere      bounds; // for collisions
     Sphere      alertBounds; // for alert ranges
     Sphere      fearBounds; // for alerting others
+    Sphere      huntingBounds; // for detecting non-serpent prey.
     int         team;  //same team dont clip
     int         clips;  // if 1, skip collisions
     int         mass; //used in calculating collision corrections, if -1 don't budge.
@@ -40,6 +41,8 @@ typedef struct Entity_S
     void       (*think)(struct Entity_S *self); /**<pointer to the think function*/
     void       (*update)(struct Entity_S *self); /**<pointer to the update function*/
     void       (*onFear)(struct Entity_S *self, struct Entity_S *scarer); /**<pointer to the fear function*/
+    void       (*onEncounteredFish)(struct Entity_S* self, struct Entity_S* other); /**<determines what action will be taken when encountering another fish*/
+    void       (*onEncounteredSerpent)(struct Entity_S* self, struct Entity_S* other); /**<determines what action will be taken when encountering the serpent*/
     void       (*draw)(struct Entity_S *self); /**<pointer to an optional extra draw funciton*/
 
 
@@ -55,6 +58,7 @@ typedef struct Entity_S
 
     EntityType entityType;
 
+    struct Entity_S* rootParent;
     struct Entity_S* parent;
     float followDist;
     Uint32  childCount;
@@ -135,5 +139,8 @@ void entity_update_all();
 void entity_collide_all();
 
 void entity_fearCheck_all();
+
+void entity_hunt_all();
+void entity_hunt(Entity* self);
 
 #endif

@@ -91,6 +91,10 @@ Entity* serpent_new(Vector3D position, SerpentPersStats *persStats, PersCurrenci
     serpentBJaw->parent = serpentController;
     serpentLure->parent = serpentController;
     lastSeg->parent = serpentController;
+    serpentTJaw->rootParent = serpentController;
+    serpentBJaw->rootParent = serpentController;
+    serpentLure->rootParent = serpentController;
+    lastSeg->rootParent = serpentController;
 
     serpentTJaw->rotSpeed = neg;
     serpentBJaw->rotSpeed = pos;
@@ -123,7 +127,7 @@ Entity* serpent_new(Vector3D position, SerpentPersStats *persStats, PersCurrenci
     vector3d_copy(serpentLure->position, serpentController->position);
     vector3d_copy(lastSeg->position, serpentController->position);
 
-    serpentLure->bounds = gfc_sphere(serpentLure->position.x, serpentLure->position.y, serpentLure->position.z, 0.1);
+    serpentLure->bounds = gfc_sphere(0, 0, 0, 0.2);
 
     serpentLure->fearBounds = gfc_sphere(serpentLure->position.x, serpentLure->position.y, serpentLure->position.z, 25 + 5 * (persStats->lureStrength - 4));
     serpentLure->fearsomeness = 0;
@@ -165,6 +169,7 @@ Entity* serpent_new(Vector3D position, SerpentPersStats *persStats, PersCurrenci
         newSeg->entityType = ET_SERPENTPART;
         newSeg->fearBounds = gfc_sphere(newSeg->position.x, newSeg->position.y, newSeg->position.z, sd->size);
         newSeg->fearsomeness = sd->size;
+        newSeg->rootParent = serpentController;
 
         lastSeg = newSeg;
     }
@@ -249,7 +254,7 @@ void serpent_think(Entity* self)
             //slog("%f, %f", self->rotation.z, self->children[0]->rotation.z);
         }
     }
-    vector3d_copy(self->fearBounds, self->position);
+    //vector3d_copy(self->fearBounds, self->position);
 }
 void serpent_update(Entity* self) {
     if (!self) return;
@@ -376,8 +381,8 @@ void serpent_lure_think(Entity* self) {
         slog("Lure is at  %f, %f, %f.", self->position.x, self->position.y, self->position.z);
     }
 
-    vector3d_copy(self->fearBounds, self->position);
-    vector3d_copy(self->bounds, self->position);
+    //vector3d_copy(self->fearBounds, self->position);
+    //vector3d_copy(self->bounds, self->position);
 }
 void serpent_segment_think(Entity* self) {
     Vector3D diff = vector3d(self->position.x - self->parent->position.x,self->position.y - self->parent->position.y,self->position.z - self->parent->position.z);
@@ -392,7 +397,7 @@ void serpent_segment_think(Entity* self) {
     self->position.x = self->parent->position.x + diff.x * self->scale.x * self->scale.x;
     self->position.y = self->parent->position.y + diff.y * self->scale.x * self->scale.x;
     self->position.z = self->parent->position.z + diff.z * self->scale.x * self->scale.x;
-    vector3d_copy(self->fearBounds, self->position);
+    //vector3d_copy(self->fearBounds, self->position);
     self->fearBounds.r = self->scale.x;
 }
 
@@ -423,6 +428,7 @@ void serpent_add_segment(Entity* serpent) {
     lastSeg->childCount++;
     lastSeg->children[lastSeg->childCount - 1] = newSeg;
     newSeg->parent = lastSeg; float dx = 0;
+    newSeg->rootParent = serpent;
     newSeg->followDist = lastSeg->scale.y;
 
     float dy = 0;

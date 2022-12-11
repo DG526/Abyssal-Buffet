@@ -364,10 +364,17 @@ int main(int argc,char *argv[])
         Uint64 runStartTime = SDL_GetTicks64();
         // main game loop
         slog("gf3d level loop begin");
-
+        int timeToNextCap = 16000;
+        int maxFish = 14;
         while(!done)
         {
-            if (get_fish_count() - get_predator_count() < 10) {
+            timeToNextCap--;
+            if (timeToNextCap <= 0) {
+                maxFish += 2;
+                timeToNextCap = 16000;
+                slog("Fish cap increased.");
+            }
+            if (get_fish_count() - get_predator_count() < maxFish) {
                 spawn_new_around_serpent(serpent, 25 * ((SerpentData*)(serpent->customData))->size, SDL_GetTicks64() - runStartTime);
                 slog("Spawned a new fish.");
             }
@@ -379,6 +386,7 @@ int main(int argc,char *argv[])
             mouseFrame += 0.01;
             if (mouseFrame >= 16)mouseFrame = 0;
             world_run_updates(w);
+            entity_hunt_all();
             entity_think_all();
             entity_update_all();
             entity_fearCheck_all();

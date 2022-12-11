@@ -5,6 +5,7 @@
 
 #include "entity.h"
 #include "serpent.h"
+#include "ai_fish.h"
 
 typedef struct
 {
@@ -116,6 +117,14 @@ void fish_free(Entity* self, int isPred) {
     if (!self)return;
     entity_manager.fish_count -= 1;
     entity_manager.pred_count -= isPred;
+    if (((PreyData*)(self->customData))->target) {
+        ((PreyData*)(((PreyData*)(self->customData))->target->customData))->hunted = 0;
+        ((PreyData*)(((PreyData*)(self->customData))->target->customData))->hunter = 0;
+    }
+    if (((PreyData*)(self->customData))->hunted) {
+        ((PreyData*)(((PreyData*)(self->customData))->hunter->customData))->target = 0;
+        ((PreyData*)(((PreyData*)(self->customData))->hunter->customData))->status = IDLE;
+    }
     entity_free(self);
 }
 
@@ -241,7 +250,7 @@ void entity_fearCheck(Entity* ent) {
     Sphere alert, fright;
     if (!ent) return;
     memcpy(&alert, &ent->alertBounds, sizeof(Sphere));
-    //vector3d_add(boundA, boundA, ent->position);
+    vector3d_add(alert, alert, ent->position);
     for (int i = 0; i < entity_manager.entity_count; i++) {
         if (!entity_manager.entity_list[i]._inuse)// not used yet
         {
@@ -271,7 +280,7 @@ void entity_fearCheck(Entity* ent) {
                 memcpy(&fright, &entity_manager.entity_list[i].bounds, sizeof(Sphere)); //use contact bounds instead.
             }
         }
-        //vector3d_add(fright, fright, entity_manager.entity_list[i].position);
+        vector3d_add(fright, fright, entity_manager.entity_list[i].position);
         if (gfc_sphere_overlap(alert, fright)) {
             ent->onFear(ent, &entity_manager.entity_list[i]);
             return;
@@ -299,7 +308,70 @@ void entity_fearCheck_all() {
         {
             continue;// skip this iteration of the loop
         }
-        entity_collide_check(&entity_manager.entity_list[i]);
+        entity_fearCheck(&entity_manager.entity_list[i]);
+    }
+}
+
+void entity_hunt_all() {
+    int i;
+    for (i = 0; i < entity_manager.entity_count; i++)
+    {
+        if (!entity_manager.entity_list[i]._inuse)// not used yet
+        {
+            continue;// skip this iteration of the loop
+        }
+        if (entity_manager.entity_list[i].entityType != ET_PREY && 
+            entity_manager.entity_list[i].entityType != ET_SWITCH)// does not follow standard predation procedure
+        {
+            continue;// skip this iteration of the loop
+        }
+        if (((PreyData*)(entity_manager.entity_list[i].customData))->eats == 0)// does not eat
+        {
+            continue;// skip this iteration of the loop
+        }
+        entity_hunt(&entity_manager.entity_list[i]);
+    }
+}
+void entity_hunt(Entity* ent) {
+    Sphere awareness, tgtBounds;
+    if (!ent) return;
+    memcpy(&awareness, &ent->huntingBounds, sizeof(Sphere));
+    vector3d_add(awareness, awareness, ent->position);
+    for (int i = 0; i < entity_manager.entity_count; i++) {
+        if (!entity_manager.entity_list[i]._inuse)// not used yet
+        {
+            continue;// skip this iteration of the loop
+        }
+        if (ent->entityType == ET_PREY && entity_manager.entity_list[i].entityType != ET_PREY) {
+            continue;
+        }
+        if (entity_manager.entity_list[i].entityType == ET_SERPENTCONTROLLER || entity_manager.entity_list[i].entityType == ET_PREDATOR) {
+            continue;
+        }
+        if (entity_manager.entity_list[i].entityType == ET_SERPENTPART) {
+            if (((SerpentData*)(entity_manager.entity_list[i].rootParent->customData))->size >= ((PreyData*)(ent->customData))->size) {
+                continue;
+            }
+        }
+        if (entity_manager.entity_list[i].entityType == ET_PREY || entity_manager.entity_list[i].entityType == ET_SWITCH) {
+            if (((PreyData*)(entity_manager.entity_list[i].customData))->size >= ((PreyData*)(ent->customData))->size) {
+                continue;
+            }
+            if (((PreyData*)(entity_manager.entity_list[i].customData))->hunted) {
+                continue;
+            }
+        }
+        memcpy(&tgtBounds, &entity_manager.entity_list[i].bounds, sizeof(Sphere));
+        vector3d_add(tgtBounds, tgtBounds, entity_manager.entity_list[i].position);
+        if (gfc_sphere_overlap(awareness, tgtBounds)) {
+            //slog("A fish noticed something.");
+            if (entity_manager.entity_list[i].entityType == ET_SERPENTPART) {
+                ent->onEncounteredSerpent(ent, &entity_manager.entity_list[i]);
+            }
+            if (entity_manager.entity_list[i].entityType == ET_PREY || entity_manager.entity_list[i].entityType == ET_SWITCH) {
+                ent->onEncounteredFish(ent, &entity_manager.entity_list[i]);
+            }
+        }
     }
 }
 
