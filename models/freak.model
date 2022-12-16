@@ -1,0 +1,7 @@
+{
+    "model":
+    {
+        "model":"models/Fish/Switches/freak.obj",
+        "texture":"models/Fish/Switches/freak.png"
+    }
+}

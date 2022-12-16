@@ -53,6 +53,11 @@ Entity* serpent_spikeseg_new(Entity* par);
 Entity* serpent_seg_new(Entity* par);
 
 typedef enum {
+    GM_COWARD,
+    GM_NORMAL,
+    GM_SASHIMI
+} Mode;
+typedef enum {
     Mutagen     = 0,
     Goldite     = 1,
     Silverium   = 2,
@@ -67,8 +72,12 @@ typedef enum {
     HeadStart       = 4
 } UpgrCats;
 
+void setGameMode(Mode gm);
+
 void levelUp(Entity* target);
 void levelUpPart(Entity* target);
+
+int hurtSerpent(Entity* serpent, Entity* attacker, float rawDmg);
 
 int* getUpgradeCosts(UpgrCats category, int currentLevel, int direction);
 int* getCanUpgrade(UpgrCats category, int currentLevel, int direction, PersCurrencies* wallet); //returns array of 1s on can buy, 0s for any insuffiecient amount.

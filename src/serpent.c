@@ -11,6 +11,11 @@
 #include "simple_json_parse.h"
 #include "simple_json_error.h"
 
+static Mode gameMode = GM_NORMAL;
+
+void setGameMode(Mode gm) {
+    gameMode = gm;
+}
 
 void serpent_think(Entity* self);
 void serpent_update(Entity* self);
@@ -167,7 +172,8 @@ Entity* serpent_new(Vector3D position, SerpentPersStats *persStats, PersCurrenci
         newSeg->followDist = lastSeg->scale.y * lastSeg->scale.y;
         newSeg->think = serpent_segment_think;
         newSeg->entityType = ET_SERPENTPART;
-        newSeg->fearBounds = gfc_sphere(newSeg->position.x, newSeg->position.y, newSeg->position.z, sd->size);
+        newSeg->bounds = gfc_sphere(0, 0, 0, 0.85 - 0.05 * i);
+        newSeg->fearBounds = gfc_sphere(0, 0, 0, sd->size);
         newSeg->fearsomeness = sd->size;
         newSeg->rootParent = serpentController;
 
@@ -444,7 +450,8 @@ void serpent_add_segment(Entity* serpent) {
 
     newSeg->think = serpent_segment_think;
     newSeg->entityType = ET_SERPENTPART;
-    newSeg->fearBounds = gfc_sphere(newSeg->position.x, newSeg->position.y, newSeg->position.z, ((SerpentData*)serpent->customData)->size);
+    newSeg->bounds = gfc_sphere(0, 0, 0, 0.6 * ((SerpentData*)serpent->customData)->size);
+    newSeg->fearBounds = gfc_sphere(0, 0, 0, ((SerpentData*)serpent->customData)->size);
     newSeg->fearsomeness = ((SerpentData*)serpent->customData)->size;
 }
 
@@ -468,11 +475,29 @@ void levelUp(Entity* target) {
 void levelUpPart(Entity* target) {
     if (!target) return;
     target->scale = vector3d_multiply(target->scale, vector3d(1.2f, 1.2f, 1.2f));
+    if (target->think == serpent_head_think) return;
+    target->bounds.r *= 1.2f;
+    target->fearBounds.r *= 1.2f;
     if (target->childCount > 0) {
         for (int i = 0; i < target->childCount; i++) {
             levelUpPart(target->children[i]);
         }
     }
+}
+
+int hurtSerpent(Entity* serpent, Entity* attacker, float rawDmg) {
+    if (!serpent || !attacker) return;
+    float dmg = rawDmg;
+    switch (gameMode) {
+    case GM_COWARD:
+        dmg /= 2;
+    case GM_SASHIMI:
+        dmg *= 1.25;
+    }
+    ((SerpentData*)serpent->customData)->health -= dmg;
+    if (((SerpentData*)serpent->customData)->health <= 0)
+        return 1;
+    return 0;
 }
 
 int* getUpgradeCosts(UpgrCats category, int currentLevel, int direction) {

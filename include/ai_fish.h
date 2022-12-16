@@ -19,7 +19,10 @@ typedef enum {
 	ALBEYENO,
 	ORCA,
 	SEAHORNET,
-	FREAK
+	FREAK,
+	BLOODSHARK,
+	CUSTOM,
+	SCYTHEFISH
 }FishIdentity;
 
 typedef enum {
@@ -70,6 +73,12 @@ Entity* spawn_new_around_serpent(Entity* serpent, float radius, int ticksElapsed
 
 Entity* prey_new(Vector3D position, float sizeMin, float sizeMax, Entity* serpent);
 Entity* prey_new_from_file(FishIdentity species, Vector3D position, float size, Entity* serpent);
+
+Entity* switch_new(Vector3D position, float sizeMin, float sizeMax, Entity* serpent);
+Entity* switch_new_from_file(FishIdentity species, Vector3D position, float size, Entity* serpent);
+
+Entity* spawn_scythefish(Entity* serpent);
+
 
 Entity* oddfish_new(Vector3D position, float size, Entity* serpent);
 Entity* hogfish_new(Vector3D position, float size, Entity* serpent);

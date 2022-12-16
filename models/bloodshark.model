@@ -1,0 +1,7 @@
+{
+    "model":
+    {
+        "model":"models/Fish/Switches/bloodshark.obj",
+        "texture":"models/Fish/Switches/bloodshark.png"
+    }
+}
