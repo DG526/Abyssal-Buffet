@@ -16,6 +16,9 @@ static Mode gameMode = GM_NORMAL;
 void setGameMode(Mode gm) {
     gameMode = gm;
 }
+Mode getGameMode() {
+    return gameMode;
+}
 
 void serpent_think(Entity* self);
 void serpent_update(Entity* self);
@@ -501,7 +504,7 @@ int hurtSerpent(Entity* serpent, Entity* attacker, float rawDmg) {
 }
 
 int* getUpgradeCosts(UpgrCats category, int currentLevel, int direction) {
-    int costs[5] = {-1,-1,-1,-1,-1};
+    static int costs[5] = {-1,-1,-1,-1,-1};
     switch (category) {
     case Metabolism:
         if (direction == 1) {//upgrade
@@ -799,7 +802,7 @@ int* getUpgradeCosts(UpgrCats category, int currentLevel, int direction) {
 }
 int* getCanUpgrade(UpgrCats category, int currentLevel, int direction, PersCurrencies* wallet) {
     int* costs = getUpgradeCosts(category, currentLevel, direction);
-    int enough[5] = { 0,0,0,0,0 };
+    static int enough[5] = { 0,0,0,0,0 };
     if (costs[0] == -1) // Cannot upgrade!
         return enough;
     if (wallet->mutagen >= costs[Mutagen])
@@ -816,6 +819,8 @@ int* getCanUpgrade(UpgrCats category, int currentLevel, int direction, PersCurre
 }
 void Upgrade(UpgrCats category, int currentLevel, int direction, PersCurrencies* wallet, SerpentPersStats* target) {
     int* costs = getUpgradeCosts(category, currentLevel, direction);
+    if (costs[0] > wallet->mutagen || costs[1] > wallet->goldite || costs[2] > wallet->silverium || costs[3] > wallet->darkite || costs[4] > wallet->orbs)
+        return;
     switch (category) {
     case Metabolism:
         target->metabolism = currentLevel + direction;

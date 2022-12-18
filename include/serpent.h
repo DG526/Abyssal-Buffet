@@ -73,6 +73,7 @@ typedef enum {
 } UpgrCats;
 
 void setGameMode(Mode gm);
+Mode getGameMode();
 
 void levelUp(Entity* target);
 void levelUpPart(Entity* target);
@@ -84,5 +85,20 @@ int* getCanUpgrade(UpgrCats category, int currentLevel, int direction, PersCurre
 void Upgrade(UpgrCats category, int currentLevel, int direction, PersCurrencies* wallet, SerpentPersStats* target);
 
 void Save(PersCurrencies* wallet, SerpentPersStats* stats);
+
+
+typedef enum {
+    AB_NONE = 0,
+    AB_PARALYSIS,
+    AB_POISON,
+    AB_INVISIBLE,
+    AB_AUTOMETABOLIZE,
+    AB_DARKVISION,
+    AB_INTIMIDATE,
+    AB_SP_LURE,
+    AB_WHALE_CALL,
+    AB_REGENERATE,
+    AB_BOUNTY_BONUS
+}Ability;
 
 #endif

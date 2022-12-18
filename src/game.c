@@ -28,6 +28,9 @@
 #include "player.h"
 #include "world.h"
 
+#include "menu.h"
+#include "mouse.h"
+
 extern int __DEBUG;
 
 int main(int argc,char *argv[])
@@ -69,7 +72,7 @@ int main(int argc,char *argv[])
     Sprite* HungerBar = gf2d_sprite_load("images/HungerBar.png", 500, 10, 1);
     Sprite* currencyIcons = gf2d_sprite_load("images/Currencies.png", 32, 32, 5);
 
-    Sprite* LvUp = gf2d_sprite_load("images/LEVEL UP.png", 192, 32, 1);
+    Sprite* LvUp = gf2d_sprite_load("images/LEVEL UP.png", 384, 64, 1);
     Sprite* NodePosNeg = gf2d_sprite_load("images/Upgrade Node -+.png", 64, 32, 1);
     Sprite* NodeNeg = gf2d_sprite_load("images/Upgrade Node -.png", 64, 32, 1);
     Sprite* NodePos = gf2d_sprite_load("images/Upgrade Node +.png", 64, 32, 1);
@@ -189,9 +192,20 @@ int main(int argc,char *argv[])
         }
         else {
             slog("ENTERING SHOP LOOP");
+            /*
+            int* c = getUpgradeCosts(Metabolism, 4, 1);
+            slog("%i, %i, %i, %i, %i", c[0], c[1], c[2], c[3], c[4]);
+            c = getUpgradeCosts(Metabolism, 4, -1);
+            slog("%i, %i, %i, %i, %i", c[0], c[1], c[2], c[3], c[4]);
+            c = getUpgradeCosts(Metabolism, 4, 1);
+            slog("%i, %i, %i, %i, %i", c[0], c[1], c[2], c[3], c[4]);
+            c = getUpgradeCosts(Metabolism, 4, -1);
+            slog("%i, %i, %i, %i, %i", c[0], c[1], c[2], c[3], c[4]);
+            */
             slog_sync();
             while (!done && !quitting) {
                 gfc_input_update();
+                mouseCheck();
                 //slog("Updated input");
                 //slog_sync();
                 gf2d_font_update();
@@ -207,116 +221,7 @@ int main(int argc,char *argv[])
                 gf3d_vgraphics_render_start();
                 //slog("Started render.");
                 //slog_sync();
-
-                //3D draws
-                //2D draws
-                    //gf2d_sprite_draw(mouse,vector2d(mousex,mousey),vector2d(2,2), vector3d(0, 0, 0), gfc_color(1, 1, 1, 1), (Uint32)mouseFrame);
-                gf2d_sprite_draw(HBar, vector2d((gf3d_vgraphics_get_view_extent().width - 505) / 2, gf3d_vgraphics_get_view_extent().height - 60),
-                    vector2d(1.02 * 2, 6), vector3d(0, 0, 0), gfc_color(0, 0, 0, 0.8), 0);
-                gf2d_sprite_draw(currencyIcons, vector2d(10, 10 + 26), vector2d(2, 2), vector3d(0, 0, 0), gfc_color(1, 1, 1, 1), 0);
-                gf2d_sprite_draw(currencyIcons, vector2d(10, 45 + 26), vector2d(2, 2), vector3d(0, 0, 0), gfc_color(1, 1, 1, 1), 1);
-                gf2d_sprite_draw(currencyIcons, vector2d(10, 80 + 26), vector2d(2, 2), vector3d(0, 0, 0), gfc_color(1, 1, 1, 1), 2);
-                gf2d_sprite_draw(currencyIcons, vector2d(10, 115 + 26), vector2d(2, 2), vector3d(0, 0, 0), gfc_color(1, 1, 1, 1), 3);
-                gf2d_sprite_draw(currencyIcons, vector2d(10, 150 + 26), vector2d(2, 2), vector3d(0, 0, 0), gfc_color(1, 1, 1, 1), 4);
-                char buf[64];
-                Color c_mutagen = gfc_color(0.8, 1, 0.8, 1);
-                Color c_goldite = gfc_color(1, 0.95, 0.3, 1);
-                Color c_silverium = gfc_color(0.9, 0.9, 0.9, 1);
-                Color c_darkite = gfc_color(0.8, 0, 1, 1);
-                Color c_orbs = gfc_color(0, 1, 1, 1);
-
-                Color c_metabolism = gfc_color(0.8, 0.5, 0, 1);
-                Color c_lure = gfc_color(0.95, 0.95, 1, 1);
-                Color c_speed = gfc_color(0.85, 0.875, 0.85, 1);
-                Color c_stealth = gfc_color(0.6, 0.4, 0.8, 1);
-                Color c_headStart = gfc_color(0, 1, 1, 1);
-
-                snprintf(buf, sizeof(buf), ": %i", wallet->mutagen);
-                gf2d_font_draw_line_tag(buf, FT_BC_Normal, c_mutagen, vector2d(42, 26 + 14));
-                snprintf(buf, sizeof(buf), ": %i", wallet->goldite);
-                gf2d_font_draw_line_tag(buf, FT_BC_Normal, c_goldite, vector2d(42, 61 + 14));
-                snprintf(buf, sizeof(buf), ": %i", wallet->silverium);
-                gf2d_font_draw_line_tag(buf, FT_BC_Normal, c_silverium, vector2d(42, 96 + 14));
-                snprintf(buf, sizeof(buf), ": %i", wallet->darkite);
-                gf2d_font_draw_line_tag(buf, FT_BC_Normal, c_darkite, vector2d(42, 131 + 14));
-                snprintf(buf, sizeof(buf), ": %i", wallet->orbs);
-                gf2d_font_draw_line_tag(buf, FT_BC_Normal, c_orbs, vector2d(42, 166 + 14));
-
-
-                int size = 8;
-                int halfSize = size / 2;
-
-                //METABOLISM MODIFY:
-                if (sps->metabolism == 1) {
-                    gf2d_sprite_draw(NodePos, vector2d(gf3d_vgraphics_get_view_extent().width / 2, 10), vector2d(size,size), vector3d(0, 0, 0), c_metabolism, 0);
-                    gf2d_sprite_draw(UG, vector2d(gf3d_vgraphics_get_view_extent().width / 2 + 58 * halfSize, 10), vector2d(size,size), vector3d(0, 0, 0), c_metabolism, 0);
-                }
-                else if (sps->metabolism == 7) {
-                    gf2d_sprite_draw(NodeNeg, vector2d(gf3d_vgraphics_get_view_extent().width / 2, 10), vector2d(size,size), vector3d(0, 0, 0), c_metabolism, 0);
-                    gf2d_sprite_draw(DG, vector2d(gf3d_vgraphics_get_view_extent().width / 2 + 5 * halfSize - 48 * halfSize, 10), vector2d(size,size), vector3d(0, 0, 0), c_metabolism, 0);
-                }
-                else {
-                    gf2d_sprite_draw(NodePosNeg, vector2d(gf3d_vgraphics_get_view_extent().width / 2, 10), vector2d(size,size), vector3d(0, 0, 0), c_metabolism, 0);
-                    gf2d_sprite_draw(DG, vector2d(gf3d_vgraphics_get_view_extent().width / 2 + 5 * halfSize - 48 * halfSize, 10), vector2d(size,size), vector3d(0, 0, 0), c_metabolism, 0);
-                    gf2d_sprite_draw(UG, vector2d(gf3d_vgraphics_get_view_extent().width / 2 + 58 * halfSize, 10), vector2d(size,size), vector3d(0, 0, 0), c_metabolism, 0);
-                }
-                snprintf(buf, sizeof(buf), "Metabolism\nLv. %i", sps->metabolism);
-                gf2d_font_draw_line_tag(buf, FT_BC_Large, c_metabolism, vector2d(gf3d_vgraphics_get_view_extent().width / 2 + 14 * size - 80, 10 + 32 * halfSize - 22 - 60));
-                int yOffRoot = 32 * halfSize + 10;
-                int yOff = yOffRoot;
-                //LURE MODIFY:
-                if (sps->lureStrength == 1) {
-                    gf2d_sprite_draw(NodePos, vector2d(gf3d_vgraphics_get_view_extent().width / 2, 10 + yOff), vector2d(size,size), vector3d(0, 0, 0), c_lure, 0);
-                    gf2d_sprite_draw(UG, vector2d(gf3d_vgraphics_get_view_extent().width / 2 + 58 * halfSize, 10 + yOff), vector2d(size, size), vector3d(0, 0, 0), c_lure, 0);
-                }
-                else if (sps->lureStrength == 7) {
-                    gf2d_sprite_draw(NodeNeg, vector2d(gf3d_vgraphics_get_view_extent().width / 2, 10 + yOff), vector2d(size, size), vector3d(0, 0, 0), c_lure, 0);
-                    gf2d_sprite_draw(DG, vector2d(gf3d_vgraphics_get_view_extent().width / 2 + 5 * halfSize - 48 * halfSize, 10 + yOff), vector2d(size, size), vector3d(0, 0, 0), c_lure, 0);
-                }
-                else {
-                    gf2d_sprite_draw(NodePosNeg, vector2d(gf3d_vgraphics_get_view_extent().width / 2, 10 + yOff), vector2d(size, size), vector3d(0, 0, 0), c_lure, 0);
-                    gf2d_sprite_draw(DG, vector2d(gf3d_vgraphics_get_view_extent().width / 2 + 5 * halfSize - 48 * halfSize, 10 + yOff), vector2d(size, size), vector3d(0, 0, 0), c_lure, 0);
-                    gf2d_sprite_draw(UG, vector2d(gf3d_vgraphics_get_view_extent().width / 2 + 58 * halfSize, 10 + yOff), vector2d(size, size), vector3d(0, 0, 0), c_lure, 0);
-                }
-                snprintf(buf, sizeof(buf), "Lure Strength\nLv. %i", sps->lureStrength);
-                gf2d_font_draw_line_tag(buf, FT_BC_Large, c_lure, vector2d(gf3d_vgraphics_get_view_extent().width / 2 + 14 * size - 90, 10 + 32 * halfSize - 22 - 60 + yOff));
-                yOff = yOffRoot * 2;
-                //STEALTH MODIFY:
-                if (sps->stealth == 5) {
-                    gf2d_sprite_draw(NodeNeu, vector2d(gf3d_vgraphics_get_view_extent().width / 2, 10 + yOff), vector2d(size, size), vector3d(0, 0, 0), c_stealth, 0);
-                    }
-                else {
-                    gf2d_sprite_draw(NodePos, vector2d(gf3d_vgraphics_get_view_extent().width / 2, 10 + yOff), vector2d(size, size), vector3d(0, 0, 0), c_stealth, 0);
-                    gf2d_sprite_draw(UG, vector2d(gf3d_vgraphics_get_view_extent().width / 2 + 58 * halfSize, 10 + yOff), vector2d(size, size), vector3d(0, 0, 0), c_stealth, 0);
-                }
-                snprintf(buf, sizeof(buf), "Stealth\nLv. %i", sps->stealth);
-                gf2d_font_draw_line_tag(buf, FT_BC_Large, c_stealth, vector2d(gf3d_vgraphics_get_view_extent().width / 2 + 14 * size - 80, 10 + 32 * halfSize - 22 - 60 + yOff));
-                yOff = yOffRoot * 3;
-                //SPEED MODIFY:
-                if (sps->stealth == 5) {
-                    gf2d_sprite_draw(NodeNeu, vector2d(gf3d_vgraphics_get_view_extent().width / 2, 10 + yOff), vector2d(size, size), vector3d(0, 0, 0), c_speed, 0);
-                    }
-                else {
-                    gf2d_sprite_draw(NodePos, vector2d(gf3d_vgraphics_get_view_extent().width / 2, 10 + yOff), vector2d(size, size), vector3d(0, 0, 0), c_speed, 0);
-                    gf2d_sprite_draw(UG, vector2d(gf3d_vgraphics_get_view_extent().width / 2 + 58 * halfSize, 10 + yOff), vector2d(size, size), vector3d(0, 0, 0), c_speed, 0);
-                }
-                snprintf(buf, sizeof(buf), "Speed\nLv. %i", sps->speed);
-                gf2d_font_draw_line_tag(buf, FT_BC_Large, c_speed, vector2d(gf3d_vgraphics_get_view_extent().width / 2 + 14 * size - 80, 10 + 32 * halfSize - 22 - 60 + yOff));
-                yOff = yOffRoot * 4;
-                //HEAD START MODIFY:
-                if (sps->headStart == 3) {
-                    gf2d_sprite_draw(NodeNeu, vector2d(gf3d_vgraphics_get_view_extent().width / 2, 10 + yOff), vector2d(size, size), vector3d(0, 0, 0), c_headStart, 0);
-                    }
-                else {
-                    gf2d_sprite_draw(NodePos, vector2d(gf3d_vgraphics_get_view_extent().width / 2, 10 + yOff), vector2d(size, size), vector3d(0, 0, 0), c_headStart, 0);
-                    gf2d_sprite_draw(UG, vector2d(gf3d_vgraphics_get_view_extent().width / 2 + 58 * halfSize, 10 + yOff), vector2d(size, size), vector3d(0, 0, 0), c_headStart, 0);
-                }
-                snprintf(buf, sizeof(buf), "Head Start\nLv. %i", sps->headStart);
-                gf2d_font_draw_line_tag(buf, FT_BC_Large, c_headStart, vector2d(gf3d_vgraphics_get_view_extent().width / 2 + 14 * size - 80, 10 + 32 * halfSize - 22 - 60 + yOff));
-
-
-                gf2d_sprite_draw(mouse, vector2d(mousex, mousey), vector2d(2, 2), vector3d(0, 0, 0), gfc_color(0.5, 0, 0.5, 0.9), (Uint32)mouseFrame);
-
+                draw_shop(sps, wallet, mouseFrame, vector2d(mousex, mousey));
 
                 gf3d_vgraphics_render_end();
 
@@ -435,7 +340,7 @@ int main(int argc,char *argv[])
                     gf2d_font_draw_line_tag(buf, FT_BC_Large, gfc_color(1, 1, 1, 1), vector2d(5, 5));
 
                     if (((SerpentData*)(serpent->customData))->levelUpDisplay > 0) {
-
+                        gf2d_sprite_draw(LvUp, vector2d(gf3d_vgraphics_get_view_extent().width / 2 - 192, gf3d_vgraphics_get_view_extent().height - 150), vector2d(2, 2), vector3d(0, 0, 0), gfc_color(1, 1, 1, ((SerpentData*)(serpent->customData))->levelUpDisplay), 0);
                     }
 
                     gf2d_sprite_draw(mouse,vector2d(mousex,mousey),vector2d(2,2),vector3d(0,0,0),gfc_color(0.5,0,0.5,0.9),(Uint32)mouseFrame);
