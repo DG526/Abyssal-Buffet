@@ -272,5 +272,8 @@
     <ClCompile Include="..\src\mouse.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\ai_scythefish.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

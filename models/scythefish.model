@@ -1,0 +1,7 @@
+{
+    "model":
+    {
+        "model":"models/Fish/scythefish.obj",
+        "texture":"models/Fish/scythefish.png"
+    }
+}

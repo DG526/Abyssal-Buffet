@@ -64,7 +64,7 @@ int main(int argc,char *argv[])
 
     slog_sync();
     slog("Synced slog");
-    entity_system_init(300);
+    entity_system_init(500);
     
     mouse = gf2d_sprite_load("images/pointer.png",32,32, 16);
     Sprite* ExpBar = gf2d_sprite_load("images/ExpBar.png", 500, 10, 1);
@@ -271,8 +271,13 @@ int main(int argc,char *argv[])
         slog("gf3d level loop begin");
         int timeToNextCap = 16000;
         int maxFish = 14;
+        int scythefish = 0;
         while(!done)
         {
+            if (!scythefish && serpent->position.z > 950) {
+                scythefish = 1;
+                spawn_scythefish(serpent);
+            }
             timeToNextCap--;
             if (timeToNextCap <= 0) {
                 maxFish += 2;

@@ -196,6 +196,10 @@ Entity* serpent_new(Vector3D position, SerpentPersStats *persStats, PersCurrenci
 void serpent_think(Entity* self)
 {
     if (!self)return;
+
+    if (gfc_input_key_pressed("q")) {
+        slog("Serpent's head is at (%f, %f, %f).", self->position.x, self->position.y, self->position.z);
+    }
     ((SerpentData*)(self->customData))->levelUpDisplay = max(((SerpentData*)(self->customData))->levelUpDisplay - 1, 0);
     if (((SerpentData*)(self->customData))->exp >= ((SerpentData*)(self->customData))->expThreshold) {
         while (((SerpentData*)(self->customData))->exp >= ((SerpentData*)(self->customData))->expThreshold) {

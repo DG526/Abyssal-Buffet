@@ -96,6 +96,8 @@ void entity_free(Entity *self)
     if (!self)return;
     //MUST DESTROY
     gf3d_model_free(self->model);
+    if (self->customData)
+        memset(self->customData, 0, sizeof(self->customData));
     memset(self,0,sizeof(Entity));
 }
 

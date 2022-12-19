@@ -21,8 +21,7 @@ typedef enum {
 	SEAHORNET,
 	FREAK,
 	BLOODSHARK,
-	CUSTOM,
-	SCYTHEFISH
+	CUSTOM
 }FishIdentity;
 
 typedef enum {
@@ -61,6 +60,10 @@ typedef struct {
 	Entity* hunter;
 	float damage;
 }PreyData;
+
+typedef struct {
+	Entity* serpent;
+}ScythefishData;
 
 /**
  * @brief Create a new random prey entity
