@@ -119,6 +119,12 @@ void fish_free(Entity* self, int isPred) {
     if (!self)return;
     entity_manager.fish_count -= 1;
     entity_manager.pred_count -= isPred;
+    if (((PreyData*)(self->customData))->identity == CUSTOM) {
+        for (int i = 0; i < 3; i++) {
+            if (self->children[i])
+                entity_free(self->children[i]);
+        }
+    }
     if (((PreyData*)(self->customData))->target) {
         ((PreyData*)(((PreyData*)(self->customData))->target->customData))->hunted = 0;
         ((PreyData*)(((PreyData*)(self->customData))->target->customData))->hunter = 0;
@@ -136,7 +142,7 @@ void entity_draw(Entity *self)
     if (!self)return;
     if (self->hidden)return;
     gf3d_model_draw(self->model,self->modelMat,gfc_color_to_vector4f(self->color),vector4d(1,1,1,1));
-    if (self->selected)
+    if (self->selected && self->entityType != ET_LURE)
     {
         gf3d_model_draw_highlight(
             self->model,

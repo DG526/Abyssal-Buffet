@@ -8,6 +8,7 @@
 #include "agumon.h"
 #include "serpent.h"
 
+int isMouseInBox(Vector2D mousePos, Vector2D topLeft, Vector2D bottomRight, int isFieldActive);
 void draw_mainMenu(float mouseFrame, Vector2D mousePos);
 void draw_creatorGUI(float mouseFrame, Vector2D mousePos);
 void draw_shop(SerpentPersStats* sps, PersCurrencies* wallet, float mouseFrame, Vector2D mousePos);

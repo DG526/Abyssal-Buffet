@@ -1,0 +1,7 @@
+{
+    "model":
+    {
+        "model":"models/Fish/Custom/H2.obj",
+        "texture":"models/Fish/Custom/H2.png"
+    }
+}

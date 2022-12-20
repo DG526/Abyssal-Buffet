@@ -71,6 +71,7 @@ Entity* serpent_new(Vector3D position, SerpentPersStats *persStats, PersCurrenci
     sd->persStats = persStats;
     sd->currencies = wallet;
     sd->snappables = gfc_list_new();
+    sd->snap = 0;
 
     slog("Speed is set to %i", sd->persStats->speed);
 
@@ -235,10 +236,14 @@ void serpent_think(Entity* self)
         int moving = 0;
         if (gfc_input_key_held("d")) {
             self->rotation.z -= 0.1 * GFC_DEGTORAD;
+            if(gfc_input_command_held("arc"))
+                self->rotation.z -= 0.1 * GFC_DEGTORAD;
             moving += 1;
         }
         if (gfc_input_key_held("a")) {
             self->rotation.z += 0.1 * GFC_DEGTORAD;
+            if (gfc_input_command_held("arc"))
+                self->rotation.z += 0.1 * GFC_DEGTORAD;
             moving -= 1;
         }
         if (gfc_input_key_held("s")) {
@@ -339,7 +344,7 @@ void serpent_lure_think(Entity* self) {
     int showCoords = 0;
     if (gfc_input_key_held(" ")) {
         ((SerpentData*)(self->parent->customData))->luring = 1;
-        if (((SerpentData*)(self->parent->customData))->lureOffset < 2 * self->scale.y && ((SerpentData*)(self->parent->customData))->lureOffset + 0.05 * self->scale.y >= 2 * self->scale.y)
+        if (((SerpentData*)(self->parent->customData))->lureOffset < 4 * self->scale.y && ((SerpentData*)(self->parent->customData))->lureOffset + 0.05 * self->scale.y >= 2 * self->scale.y)
             showCoords = 1;
         ((SerpentData*)(self->parent->customData))->lureOffset += 0.05 * self->scale.y;
         ((SerpentData*)(self->parent->customData))->lureOffset = MIN(((SerpentData*)(self->parent->customData))->lureOffset, 2 * self->scale.y);
@@ -375,6 +380,7 @@ void serpent_lure_think(Entity* self) {
         gfc_list_foreach(((SerpentData*)(self->parent->customData))->snappables, &crunch);
         gfc_list_clear(((SerpentData*)(self->parent->customData))->snappables);
         ((SerpentData*)(self->parent->customData))->exp += (1 + ((SerpentPersStats*)((SerpentData*)(self->parent->customData))->persStats)->metabolism * 0.2) * totalNutrition;
+        ((SerpentData*)(self->parent->customData))->snap = 0;
     }
     float dx = 0;
     float dy = 0;
@@ -460,6 +466,7 @@ void serpent_add_segment(Entity* serpent) {
     newSeg->bounds = gfc_sphere(0, 0, 0, 0.6 * ((SerpentData*)serpent->customData)->size);
     newSeg->fearBounds = gfc_sphere(0, 0, 0, ((SerpentData*)serpent->customData)->size);
     newSeg->fearsomeness = ((SerpentData*)serpent->customData)->size;
+    newSeg->rootParent = serpent;
 }
 
 void levelUp(Entity* target) {

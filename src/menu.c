@@ -22,8 +22,21 @@ int isMouseInBox(Vector2D mousePos, Vector2D topLeft, Vector2D bottomRight, int 
 }
 
 //MAIN MENU
-void draw_mainMenu() {
+void draw_mainMenu(float mouseFrame, Vector2D mousePos) {
+    Sprite* mouse = gf2d_sprite_load("images/pointer.png", 32, 32, 16);
+    Sprite* logo = gf2d_sprite_load("images/Logo_White.png", 512, 512, 1);
+    Sprite* play = gf2d_sprite_load("images/Play.png", 128, 64, 16);
+    Sprite* build = gf2d_sprite_load("images/Build.png", 128, 64, 16);
 
+    float logoScale = 2.5;
+    Color c_logo = gfc_color(0.65, 0.05, 0.15, 1);
+
+    gf2d_sprite_draw(logo, vector2d(gf3d_vgraphics_get_view_extent().width - 15 - 256 * logoScale, 15), vector2d(logoScale, logoScale), vector3d(0, 0, 0), c_logo, 0);
+
+    gf2d_sprite_draw(play, vector2d(150, 200), vector2d(4, 4), vector3d(0, 0, 0), gfc_color(0.75, 0.05, 0.15, 1), 0);
+    gf2d_sprite_draw(build, vector2d(150, 450), vector2d(4, 4), vector3d(0, 0, 0), gfc_color(0.65, 0.05, 0.25, 1), 0);
+
+    gf2d_sprite_draw(mouse, mousePos, vector2d(2, 2), vector3d(0, 0, 0), gfc_color(0.5, 0, 0.5, 0.9), (Uint32)mouseFrame);
 }
 
 //SHOP GUI
@@ -40,6 +53,9 @@ void draw_shop(SerpentPersStats* sps, PersCurrencies* wallet, float mouseFrame, 
     Sprite* UG = gf2d_sprite_load("images/Upgrade.png", 48, 32, 1);
     Sprite* DG = gf2d_sprite_load("images/Downgrade.png", 48, 32, 1);
 
+    Sprite* L = gf2d_sprite_load("images/Arrow L.png", 32, 32, 1);
+    Sprite* R = gf2d_sprite_load("images/Arrow R.png", 32, 32, 1);
+
     //gf2d_sprite_draw(HBar, vector2d((gf3d_vgraphics_get_view_extent().width - 505) / 2, gf3d_vgraphics_get_view_extent().height - 60),
     //    vector2d(1.02 * 2, 6), vector3d(0, 0, 0), gfc_color(0, 0, 0, 0.8), 0);
     gf2d_sprite_draw(currencyIcons, vector2d(10, 10 + 26), vector2d(2, 2), vector3d(0, 0, 0), gfc_color(1, 1, 1, 1), 0);
@@ -50,6 +66,8 @@ void draw_shop(SerpentPersStats* sps, PersCurrencies* wallet, float mouseFrame, 
     char buf[64];
     Color c_valid = gfc_color(0, 1, 0, 1);
     Color c_invalid = gfc_color(1, 0, 0, 1);
+    Color c_coward = gfc_color(1, 1, 0, 1);
+    Color c_white = gfc_color(1, 1, 1, 1);
 
     Color c_mutagen = gfc_color(0.8, 1, 0.8, 1);
     Color c_goldite = gfc_color(1, 0.95, 0.3, 1);
@@ -248,6 +266,57 @@ void draw_shop(SerpentPersStats* sps, PersCurrencies* wallet, float mouseFrame, 
     gf2d_font_draw_line_tag(buf, FT_BC_Large, c_headStart, vector2d(gf3d_vgraphics_get_view_extent().width / 2 + 14 * size - 80, 10 + 32 * halfSize - 22 - 60 + yOff));
 
 
+    switch (getGameMode()) {
+    case GM_NORMAL:
+        if (isMouseInBox(mousePos,
+            vector2d(15, gf3d_vgraphics_get_view_extent().height - 16 * halfSize - 15),
+            vector2d(15 + 16 * halfSize, gf3d_vgraphics_get_view_extent().height - 15),
+            1)) {
+            if (mouseDownLeft()) {
+                setGameMode(GM_COWARD);
+            }
+        }
+        if (isMouseInBox(mousePos,
+            vector2d(300, gf3d_vgraphics_get_view_extent().height - 16 * halfSize - 15),
+            vector2d(300 + 16 * halfSize, gf3d_vgraphics_get_view_extent().height - 15),
+            1)) {
+            if (mouseDownLeft()) {
+                setGameMode(GM_SASHIMI);
+            }
+        }
+        gf2d_sprite_draw(L, vector2d(15, gf3d_vgraphics_get_view_extent().height - 16 * halfSize - 15), vector2d(halfSize, halfSize), vector3d(0, 0, 0), c_coward, 0);
+        gf2d_font_draw_line_tag("Normal", FT_BC_XLarge, c_white, vector2d(135, gf3d_vgraphics_get_view_extent().height - 16 * halfSize - 15));
+        gf2d_font_draw_line_tag("Mode", FT_BC_XLarge, c_white, vector2d(155, gf3d_vgraphics_get_view_extent().height - 16 * halfSize / 2 - 15));
+        gf2d_sprite_draw(R, vector2d(300, gf3d_vgraphics_get_view_extent().height - 16 * halfSize - 15), vector2d(halfSize, halfSize), vector3d(0, 0, 0), c_invalid, 0);
+        break;
+    case GM_COWARD:
+        if (isMouseInBox(mousePos,
+            vector2d(300, gf3d_vgraphics_get_view_extent().height - 16 * halfSize - 15),
+            vector2d(300 + 16 * halfSize, gf3d_vgraphics_get_view_extent().height - 15),
+            1)) {
+            if (mouseDownLeft()) {
+                setGameMode(GM_NORMAL);
+            }
+        }
+        gf2d_font_draw_line_tag("Coward", FT_BC_XLarge, c_coward, vector2d(135, gf3d_vgraphics_get_view_extent().height - 16 * halfSize - 15));
+        gf2d_font_draw_line_tag("Mode", FT_BC_XLarge, c_coward, vector2d(155, gf3d_vgraphics_get_view_extent().height - 16 * halfSize / 2 - 15));
+        gf2d_sprite_draw(R, vector2d(300, gf3d_vgraphics_get_view_extent().height - 16 * halfSize - 15), vector2d(halfSize, halfSize), vector3d(0, 0, 0), c_white, 0);
+        break;
+    case GM_SASHIMI:
+        if (isMouseInBox(mousePos,
+            vector2d(15, gf3d_vgraphics_get_view_extent().height - 16 * halfSize - 15),
+            vector2d(15 + 16 * halfSize, gf3d_vgraphics_get_view_extent().height - 15),
+            1)) {
+            if (mouseDownLeft()) {
+                setGameMode(GM_NORMAL);
+            }
+        }
+        gf2d_sprite_draw(L, vector2d(15, gf3d_vgraphics_get_view_extent().height - 16 * halfSize - 15), vector2d(halfSize, halfSize), vector3d(0, 0, 0), c_white, 0);
+        gf2d_font_draw_line_tag("Serpent", FT_BC_XLarge, c_invalid, vector2d(135, gf3d_vgraphics_get_view_extent().height - 16 * halfSize - 15));
+        gf2d_font_draw_line_tag("Sashimi", FT_BC_XLarge, c_invalid, vector2d(135, gf3d_vgraphics_get_view_extent().height - 16 * halfSize / 2 - 15));
+        break;
+    }
+
     gf2d_sprite_draw(mouse, mousePos, vector2d(2, 2), vector3d(0, 0, 0), gfc_color(0.5, 0, 0.5, 0.9), (Uint32)mouseFrame);
 
 }
@@ -270,3 +339,37 @@ void draw_levelGUI(Entity* serpent) {
 }
 
 //CREATOR GUI
+void draw_creatorGUI(float mouseFrame, Vector2D mousePos) {
+    Color white = gfc_color(1, 1, 1, 1);
+    Sprite* mouse = gf2d_sprite_load("images/pointer.png", 32, 32, 16);
+    Sprite* L = gf2d_sprite_load("images/Arrow L.png", 32, 32, 1);
+    Sprite* R = gf2d_sprite_load("images/Arrow R.png", 32, 32, 1);
+    Sprite* U = gf2d_sprite_load("images/Arrow U.png", 32, 32, 1);
+    Sprite* D = gf2d_sprite_load("images/Arrow D.png", 32, 32, 1);
+    Sprite* sav = gf2d_sprite_load("images/save.png", 32, 32, 1);
+    int size = 8;
+    int halfSize = size / 2;
+
+    //Exit & Save
+    gf2d_sprite_draw(L, vector2d(15, gf3d_vgraphics_get_view_extent().height - 16 * halfSize - 15), vector2d(halfSize, halfSize), vector3d(0, 0, 0), white, 0);
+    gf2d_sprite_draw(sav, vector2d(gf3d_vgraphics_get_view_extent().width - 16 * halfSize - 15, gf3d_vgraphics_get_view_extent().height - 16 * halfSize - 15), vector2d(halfSize, halfSize), vector3d(0, 0, 0), white, 0);
+
+    //Fins
+    gf2d_sprite_draw(L, vector2d(gf3d_vgraphics_get_view_extent().width / 2 - 200 - 16 * halfSize, 20), vector2d(halfSize, halfSize), vector3d(0, 0, 0), white, 0);
+    gf2d_sprite_draw(R, vector2d(gf3d_vgraphics_get_view_extent().width / 2 + 200, 20), vector2d(halfSize, halfSize), vector3d(0, 0, 0), white, 0);
+    
+    //Color
+    gf2d_sprite_draw(L, vector2d(gf3d_vgraphics_get_view_extent().width / 2 - 200 - 16 * halfSize, gf3d_vgraphics_get_view_extent().height - 16 * halfSize - 20), vector2d(halfSize, halfSize), vector3d(0, 0, 0), white, 0);
+    gf2d_sprite_draw(R, vector2d(gf3d_vgraphics_get_view_extent().width / 2 + 200, gf3d_vgraphics_get_view_extent().height - 16 * halfSize - 20), vector2d(halfSize, halfSize), vector3d(0, 0, 0), white, 0);
+    
+    //Head
+    gf2d_sprite_draw(U, vector2d(50, gf3d_vgraphics_get_view_extent().height / 2 - 100 - 16 * halfSize), vector2d(halfSize, halfSize), vector3d(0, 0, 0), white, 0);
+    gf2d_sprite_draw(D, vector2d(50, gf3d_vgraphics_get_view_extent().height / 2 + 100), vector2d(halfSize, halfSize), vector3d(0, 0, 0), white, 0);
+    
+
+    //Tail
+    gf2d_sprite_draw(U, vector2d(gf3d_vgraphics_get_view_extent().width - 16 * halfSize - 50, gf3d_vgraphics_get_view_extent().height / 2 - 100 - 16 * halfSize), vector2d(halfSize, halfSize), vector3d(0, 0, 0), white, 0);
+    gf2d_sprite_draw(D, vector2d(gf3d_vgraphics_get_view_extent().width - 16 * halfSize - 50, gf3d_vgraphics_get_view_extent().height / 2 + 100), vector2d(halfSize, halfSize), vector3d(0, 0, 0), white, 0);
+
+    gf2d_sprite_draw(mouse, mousePos, vector2d(2, 2), vector3d(0, 0, 0), gfc_color(0.5, 0, 0.5, 0.9), (Uint32)mouseFrame);
+}

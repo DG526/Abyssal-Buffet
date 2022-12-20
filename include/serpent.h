@@ -4,6 +4,7 @@
 #include "entity.h"
 #include "gf2d_sprite.h"
 #include "gfc_list.h"
+#include "gfc_audio.h"
 
 
 typedef struct {
@@ -42,6 +43,7 @@ typedef struct {
     int still;
     SerpentPersStats* persStats;
     PersCurrencies* currencies;
+    int snap;
 }SerpentData;
 /**
  * @brief Create a new serpent entity

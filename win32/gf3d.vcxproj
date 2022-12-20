@@ -105,6 +105,7 @@
     <ClInclude Include="..\gfc\simple_json\include\simple_json_value.h" />
     <ClInclude Include="..\gfc\simple_logger\include\simple_logger.h" />
     <ClInclude Include="..\include\ai_fish.h" />
+    <ClInclude Include="..\include\custom_fish.h" />
     <ClInclude Include="..\include\gf3d_camera.h" />
     <ClInclude Include="..\include\gf3d_commands.h" />
     <ClInclude Include="..\include\gf3d_extensions.h" />
@@ -144,6 +145,7 @@
     <ClCompile Include="..\src\agumon.c" />
     <ClCompile Include="..\src\ai_fish.c" />
     <ClCompile Include="..\src\ai_scythefish.c" />
+    <ClCompile Include="..\src\custom_fish.c" />
     <ClCompile Include="..\src\entity.c" />
     <ClCompile Include="..\src\game.c" />
     <ClCompile Include="..\src\gf2d_font.c" />

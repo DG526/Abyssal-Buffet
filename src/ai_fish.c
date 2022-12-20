@@ -3,10 +3,38 @@
 #include "ai_fish.h"
 #include "gfc_input.h"
 #include "serpent.h"
+#include "simple_json.h"
+#include "custom_fish.h"
 
 void prey_think_standard(Entity* self);
 void prey_think_predatory(Entity* self);
 void checkForDespawn(Entity* self);
+void part_think(Entity* self) {
+	self->position = self->parent->position;
+	self->rotation = self->parent->rotation;
+	self->scale = self->parent->scale;
+}
+
+void customize(Entity* body) {
+	int hid, fid, tid, cid;
+	Entity* head, * fins, * tail, * dummy;
+	readCustomFish(&dummy, &head, &fins, &tail, &hid, &fid, &tid, &cid);
+	entity_free(dummy);
+	switchPartColor(cid, body);
+	switchPartColor(cid, head);
+	switchPartColor(cid, fins);
+	switchPartColor(cid, tail);
+	body->childCount = 3;
+	body->children[0] = head;
+	body->children[1] = fins;
+	body->children[2] = tail;
+	head->parent = body;
+	fins->parent = body;
+	tail->parent = body;
+	head->think = part_think;
+	fins->think = part_think;
+	tail->think = part_think;
+}
 
 Entity* spawn_new_around_serpent(Entity* serpent, float radius, int ticksElapsed) {
 	float yaw = ((float)rand() / (float)RAND_MAX) * GFC_2PI;
@@ -19,21 +47,21 @@ Entity* spawn_new_around_serpent(Entity* serpent, float radius, int ticksElapsed
 	spawnPos.y -= dy * radius * 0.8 * ((SerpentData*)(serpent->customData))->size;
 	spawnPos.z += dz * radius * 0.8 * ((SerpentData*)(serpent->customData))->size;
 
-	float difficultySeed = SDL_clamp(((SerpentData*)(serpent->customData))->size * (ticksElapsed / 120000), 1, 20);
+	float difficultySeed = SDL_clamp((((SerpentData*)(serpent->customData))->size * 0.8f + ((float)ticksElapsed / 120000) / 2), 1, 20);
 	slog("Spawning fish with difficulty seed: %f", difficultySeed);
-	float sizemin, sizemax, predatorChance;
+	float sizemin, sizemax, predatorChance = 0;
 
 	if (difficultySeed < 10) {
 		sizemin = difficultySeed * 0.5f;
-		sizemax = difficultySeed * 1.2f;
+		sizemax = difficultySeed * 1;
 	}
 	else {
 
 		sizemin = difficultySeed * 0.7f;
-		sizemax = difficultySeed * 1.5f;
+		sizemax = difficultySeed * 1.2f;
 	}
 
-	if (difficultySeed < 2.5) {
+	if (difficultySeed < 2.5 && getGameMode() != GM_SASHIMI) {
 		predatorChance = 0;
 	}
 	else if (difficultySeed < 5) {
@@ -41,6 +69,14 @@ Entity* spawn_new_around_serpent(Entity* serpent, float radius, int ticksElapsed
 	}
 	else {
 		predatorChance = 0.25;
+	}
+	if (getGameMode() == GM_SASHIMI) {
+		predatorChance *= 2;
+		if (predatorChance > 0.45)
+			predatorChance = 0.45;
+	}
+	else if (getGameMode == GM_COWARD) {
+		predatorChance *= 0.5;
 	}
 
 	float pred = ((float)rand() / (float)RAND_MAX);
@@ -57,17 +93,19 @@ Entity* prey_new(Vector3D position, float sizeMin, float sizeMax, Entity* serpen
 	Entity* fish = NULL;
 	float size = ((float)rand() / (float)RAND_MAX) * (sizeMax - sizeMin) + sizeMin;
 	FishIdentity species = UNDEF;
-	float seed = ((float)rand() / (float)RAND_MAX) * 10;
-	if (seed < 3)
+	float seed = ((float)rand() / (float)RAND_MAX) * 30;
+	if (seed < 9)
 		species = ODDFISH;
-	else if (seed < 5)
+	else if (seed < 15)
 		species = HOGFISH;
-	else if (seed < 7)
+	else if (seed < 21)
 		species = MOSSPRAWN;
-	else if (seed < 9)
+	else if (seed < 27)
 		species = ALBEYENO;
-	else
+	else if (seed < 29)
 		species = ORCA;
+	else
+		species = CUSTOM;
 	fish = prey_new_from_file(species, position, size, serpent);
 	fish->entityType = ET_PREY;
 	fish->onFear = prey_flee;
@@ -76,6 +114,7 @@ Entity* prey_new(Vector3D position, float sizeMin, float sizeMax, Entity* serpen
 
 Entity* prey_new_from_file(FishIdentity species, Vector3D position, float size, Entity* serpent) {
 	SJson* json;
+	int isCustom = 0;
 	if (!species)return NULL;
 	switch (species) {
 	case ODDFISH:
@@ -90,6 +129,14 @@ Entity* prey_new_from_file(FishIdentity species, Vector3D position, float size, 
 	case ALBEYENO:
 		json = sj_load("config/fish/albeyeno.cfg");
 		break;
+	case CUSTOM:
+		json = sj_load("config/fish/customFish.cfg");
+		SJson* s = sj_load("customFish.sav");
+		if (s) {
+			sj_free(s);
+			break;
+		}
+		sj_free;
 	case ORCA:
 		json = sj_load("config/fish/sharkPoacher.cfg");
 		break;
@@ -207,6 +254,10 @@ Entity* prey_new_from_file(FishIdentity species, Vector3D position, float size, 
 	pd->lungeThreshold = lungeRange * realSize;
 	fish->onEncounteredFish = chaseFish;
 	fish->onEncounteredSerpent = chaseSerpent;
+
+	if (species == CUSTOM) {
+		customize(fish);
+	}
 
 	return fish;
 }
@@ -513,6 +564,12 @@ void prey_think_standard(Entity* self) {
 		vector3d_add(lureAura, lureAura, pd->serpentLure->position);
 		if (((SerpentData*)(pd->serpent->customData))->luring && ((SerpentData*)(pd->serpent->customData))->size >= pd->size && gfc_sphere_overlap(fishBounds, lureAura)) {
 			pd->status = ATTRACTED;
+			if (pd->target->entityType == ET_PREY || pd->target->entityType == ET_SWITCH) {
+				((PreyData*)(pd->target->customData))->hunter = 0;
+				((PreyData*)(pd->target->customData))->hunted = 0;
+			}
+			pd->target = 0;
+
 			pd->lastDirection = self->rotation;
 
 			Vector3D diff = vector3d(self->position.x - pd->serpentLure->position.x, self->position.y - pd->serpentLure->position.y, self->position.z - pd->serpentLure->position.z);
@@ -521,7 +578,7 @@ void prey_think_standard(Entity* self) {
 
 			pd->targetDirection = vector3d(vector_angle(-diff.z, diff.x + diff.y) * GFC_DEGTORAD, 0, vector_angle(diff.x, diff.y) * GFC_DEGTORAD);
 			self->rotation = pd->targetDirection;
-			slog_sync();
+			break;
 		}
 		//Check if current target is out of reach:
 		if (isOutOfReach(self, pd->target)) {
@@ -735,6 +792,11 @@ void prey_think_predatory(Entity* self) {
 		if (((SerpentData*)(pd->serpent->customData))->luring && ((SerpentData*)(pd->serpent->customData))->size >= pd->size && gfc_sphere_overlap(fishBounds, lureAura)) {
 			pd->status = ATTRACTED;
 			pd->lastDirection = self->rotation;
+			if (pd->target->entityType == ET_PREY || pd->target->entityType == ET_SWITCH) {
+				((PreyData*)(pd->target->customData))->hunter = 0;
+				((PreyData*)(pd->target->customData))->hunted = 0;
+			} 
+			pd->target = 0;
 
 			Vector3D diff = vector3d(self->position.x - pd->serpentLure->position.x, self->position.y - pd->serpentLure->position.y, self->position.z - pd->serpentLure->position.z);
 
@@ -742,7 +804,7 @@ void prey_think_predatory(Entity* self) {
 
 			pd->targetDirection = vector3d(vector_angle(-diff.z, diff.x + diff.y) * GFC_DEGTORAD, 0, vector_angle(diff.x, diff.y) * GFC_DEGTORAD);
 			self->rotation = pd->targetDirection;
-			slog_sync();
+			break;
 		}
 		//Check if current target is out of reach:
 		if (isOutOfReach(self, pd->target)) {
@@ -771,7 +833,7 @@ void prey_think_predatory(Entity* self) {
 			}
 			else {
 				slog("CHOMP!");
-				int killed = hurtSerpent(pd->target->rootParent, self, pd->damage* (pd->size - ((SerpentData*)(pd->serpent->customData))->size));
+				int killed = hurtSerpent(pd->target->rootParent, self, pd->damage * (pd->size - ((SerpentData*)(pd->serpent->customData))->size));
 				if (!killed) {
 					prey_flee(self, pd->target);
 					pd->target = 0;
@@ -835,15 +897,17 @@ void prey_flee(Entity* self, Entity* scarer) {
 void chaseSerpent(Entity* self, Entity* target) {
 	if (!self || !target) return;
 	PreyData* pd = ((PreyData*)(self->customData));
+	slog("Deciding whether to hunt serpent...");
+	slog_sync();
 	switch (pd->strategy) {
-	case TGT_CHEMOSYNTHESIS:
-		return;
 	case TGT_FIRSTSPOTTED:
 		if (!pd->target) {
 			pd->target = target;
 			pd->targetSize = ((SerpentData*)(target->rootParent->customData))->size;
 			pd->targetNutrition = 1000;
 		}
+		slog("Hunting serpent.");
+		slog_sync();
 		pd->status = HUNGRY;
 		return;
 	case TGT_LARGEST:
@@ -851,11 +915,19 @@ void chaseSerpent(Entity* self, Entity* target) {
 			pd->target = target;
 			pd->targetSize = ((SerpentData*)(target->rootParent->customData))->size;
 			pd->targetNutrition = 1000;
+			slog("Hunting serpent.");
+			slog_sync();
 		}
 		else if (pd->targetSize < ((SerpentData*)(target->rootParent->customData))->size) {
+			if (pd->target->entityType == ET_PREY || pd->target->entityType == ET_SWITCH) {
+				((PreyData*)(pd->target->customData))->hunter = 0;
+				((PreyData*)(pd->target->customData))->hunted = 0;
+			}
 			pd->target = target;
 			pd->targetSize = ((SerpentData*)(target->rootParent->customData))->size;
 			pd->targetNutrition = 1000;
+			slog("Hunting serpent.");
+			slog_sync();
 		}
 		pd->status = HUNGRY;
 		return;
@@ -864,11 +936,19 @@ void chaseSerpent(Entity* self, Entity* target) {
 			pd->target = target;
 			pd->targetSize = ((SerpentData*)(target->rootParent->customData))->size;
 			pd->targetNutrition = 1000;
+			slog("Hunting serpent.");
+			slog_sync();
 		}
 		else if (pd->targetSize > ((SerpentData*)(target->rootParent->customData))->size) {
+			if (pd->target->entityType == ET_PREY || pd->target->entityType == ET_SWITCH) {
+				((PreyData*)(pd->target->customData))->hunter = 0;
+				((PreyData*)(pd->target->customData))->hunted = 0;
+			}
 			pd->target = target;
 			pd->targetSize = ((SerpentData*)(target->rootParent->customData))->size;
 			pd->targetNutrition = 1000;
+			slog("Hunting serpent.");
+			slog_sync();
 		}
 		pd->status = HUNGRY;
 		return;
@@ -877,11 +957,19 @@ void chaseSerpent(Entity* self, Entity* target) {
 			pd->target = target;
 			pd->targetSize = ((SerpentData*)(target->rootParent->customData))->size;
 			pd->targetNutrition = 1000;
+			slog("Hunting serpent.");
+			slog_sync();
 		}
 		else if (pd->targetNutrition < 1000) {
+			if (pd->target->entityType == ET_PREY || pd->target->entityType == ET_SWITCH) {
+				((PreyData*)(pd->target->customData))->hunter = 0;
+				((PreyData*)(pd->target->customData))->hunted = 0;
+			}
 			pd->target = target;
 			pd->targetSize = ((SerpentData*)(target->rootParent->customData))->size;
 			pd->targetNutrition = 1000;
+			slog("Hunting serpent.");
+			slog_sync();
 		}
 		pd->status = HUNGRY;
 		return;
@@ -921,8 +1009,10 @@ void chaseFish(Entity* self, Entity* target) {
 			slog("The fish hunts. (LFS)");
 		}
 		else if (((PreyData*)(pd->target->customData))->size < ((PreyData*)(target->customData))->size) {
-			((PreyData*)(pd->target->customData))->hunted = 0;
-			((PreyData*)(pd->target->customData))->hunter = 0;
+			if (pd->target->entityType == ET_PREY || pd->target->entityType == ET_SWITCH) {
+				((PreyData*)(pd->target->customData))->hunter = 0;
+				((PreyData*)(pd->target->customData))->hunted = 0;
+			}
 			pd->target = target;
 			pd->targetSize = ((PreyData*)(target->customData))->size;
 			pd->targetNutrition = ((PreyData*)(target->customData))->nutrition;
@@ -945,8 +1035,10 @@ void chaseFish(Entity* self, Entity* target) {
 			slog("The fish hunts. (SFS)");
 		}
 		else if (((PreyData*)(pd->target->customData))->size > ((PreyData*)(target->customData))->size) {
-			((PreyData*)(pd->target->customData))->hunted = 0;
-			((PreyData*)(pd->target->customData))->hunter = 0;
+			if (pd->target->entityType == ET_PREY || pd->target->entityType == ET_SWITCH) {
+				((PreyData*)(pd->target->customData))->hunter = 0;
+				((PreyData*)(pd->target->customData))->hunted = 0;
+			}
 			pd->target = target;
 			pd->targetSize = ((PreyData*)(target->customData))->size;
 			pd->targetNutrition = ((PreyData*)(target->customData))->nutrition;
@@ -969,8 +1061,10 @@ void chaseFish(Entity* self, Entity* target) {
 			slog("The fish hunts. (NFS)");
 		}
 		else if (pd->targetNutrition < ((PreyData*)(target->customData))->nutrition) {
-			((PreyData*)(pd->target->customData))->hunted = 0;
-			((PreyData*)(pd->target->customData))->hunter = 0;
+			if (pd->target->entityType == ET_PREY || pd->target->entityType == ET_SWITCH) {
+				((PreyData*)(pd->target->customData))->hunter = 0;
+				((PreyData*)(pd->target->customData))->hunted = 0;
+			}
 			pd->target = target;
 			pd->targetSize = ((PreyData*)(target->customData))->size;
 			pd->targetNutrition = ((PreyData*)(target->customData))->nutrition;
